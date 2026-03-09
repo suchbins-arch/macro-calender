@@ -847,6 +847,72 @@ let currentView = 'calendar';
 let bigMapG, bigMapPath;
 let bwMode = false;
 
+/* ══ GEMINI RATE LIMITER (무료 플랜: 15 req/min) ══ */
+const RATE_LIMIT_RPM = 15;
+const RATE_WINDOW_MS = 60_000;
+let rateCallTimestamps = [];   // 최근 1분간 호출 시각 기록
+let rateQueue = [];            // 대기 중인 요청 {fn, resolve, reject}
+let rateProcessing = false;
+
+function _pruneTimestamps() {
+  const cutoff = Date.now() - RATE_WINDOW_MS;
+  rateCallTimestamps = rateCallTimestamps.filter(t => t > cutoff);
+}
+
+async function _processQueue() {
+  if (rateProcessing) return;
+  rateProcessing = true;
+  while (rateQueue.length > 0) {
+    _pruneTimestamps();
+    if (rateCallTimestamps.length < RATE_LIMIT_RPM) {
+      const {fn, resolve, reject} = rateQueue.shift();
+      rateCallTimestamps.push(Date.now());
+      try { resolve(await fn()); } catch(e) { reject(e); }
+    } else {
+      // 가장 오래된 호출이 만료될 때까지 대기
+      const waitMs = RATE_WINDOW_MS - (Date.now() - rateCallTimestamps[0]) + 200;
+      await new Promise(r => setTimeout(r, Math.max(waitMs, 500)));
+      _pruneTimestamps();
+    }
+  }
+  rateProcessing = false;
+}
+
+/**
+ * Gemini API를 호출합니다. 무료 플랜 분당 15회 제한을 자동으로 지킵니다.
+ * 429 응답 시 대기 후 1회 재시도합니다.
+ */
+async function geminiCall(body, onWait) {
+  const fn = async () => {
+    const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
+    let resp = await fetch(url, {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify(body)
+    });
+    if (resp.status === 429) {
+      // 한 번만 재시도: 10초 대기
+      if (onWait) onWait('⏳ API 한도 도달 — 10초 후 재시도...');
+      await new Promise(r => setTimeout(r, 10_000));
+      rateCallTimestamps.push(Date.now());  // 재시도도 카운트
+      resp = await fetch(url, {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify(body)
+      });
+    }
+    if (!resp.ok) {
+      const err = await resp.json().catch(()=>({}));
+      throw new Error(err.error?.message || `API 오류 ${resp.status}`);
+    }
+    return resp.json();
+  };
+  return new Promise((resolve, reject) => {
+    rateQueue.push({fn, resolve, reject});
+    _processQueue();
+  });
+}
+
 /* ══ B&W MODE ══ */
 function toggleBW() {
   bwMode = !bwMode;
@@ -984,17 +1050,10 @@ JSON 배열 형식으로만 응답 (다른 텍스트 없이):
 
 최대 5개, 중요도 높은 순으로.`;
 
-    const resp = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        contents: [{ parts: [{ text: prompt }] }],
-        generationConfig: { maxOutputTokens: 512, temperature: 0.1 }
-      })
+    const d = await geminiCall({
+      contents: [{ parts: [{ text: prompt }] }],
+      generationConfig: { maxOutputTokens: 512, temperature: 0.1 }
     });
-
-    if (!resp.ok) throw new Error('API error');
-    const d = await resp.json();
     const text = d.candidates?.[0]?.content?.parts?.[0]?.text || '';
     const jsonMatch = text.match(/\[[\s\S]*?\]/);
     if (!jsonMatch) throw new Error('No JSON');
@@ -1040,7 +1099,7 @@ function onCountryHover(ev, d, el, tipId) {
 
   // Debounce 250ms before fetching
   if (hoverDebounceTimer) clearTimeout(hoverDebounceTimer);
-  hoverDebounceTimer = setTimeout(async () => {
+  hoverDebounceTimer = setTimeout(async () => {  // 600ms — 무료 플랜 호출 절약
     if (currentHoverIso !== d.iso3) return;
     const result = await fetchWeeklyIndicators(d.iso3);
     if (currentHoverIso !== d.iso3) return;  // May have moved away
@@ -1071,7 +1130,7 @@ function onCountryHover(ev, d, el, tipId) {
     }
 
     tt.innerHTML = `<div class="mt-cn">${countryLabel}</div><div class="mt-info">${selectedLabel}</div>${evHtml}`;
-  }, 250);
+  }, 600);
 }
 
 function onCountryLeave(tipId) {
@@ -1156,17 +1215,14 @@ ${indicatorList}
   "assets": ["영향자산1","영향자산2","영향자산3"]
 }]`;
 
-    const resp = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        contents: [{ parts: [{ text: prompt }] }],
-        generationConfig: { maxOutputTokens: 1536, temperature: 0.5 }
-      })
+    const data = await geminiCall({
+      contents: [{ parts: [{ text: prompt }] }],
+      generationConfig: { maxOutputTokens: 1536, temperature: 0.5 }
+    }, msg => {
+      // 429 대기 중 우측 패널에 안내 표시
+      const area = document.getElementById('ai-result-area');
+      if (area) area.innerHTML = `<div class="sc-loading"><div style="font-size:20px;opacity:.4;margin-bottom:8px;">⏳</div><div>${msg}</div></div>`;
     });
-
-    if (!resp.ok) throw new Error(`API 오류 ${resp.status}`);
-    const data = await resp.json();
     const text = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
     const jsonMatch = text.match(/\[[\s\S]*\]/);
     if (!jsonMatch) throw new Error('파싱 실패');
@@ -1329,21 +1385,13 @@ async function runAI() {
 ## 리스크
 (이 분석의 불확실성과 주의사항)`;
 
-    const resp = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        contents: [{ parts: [{ text: prompt }] }],
-        generationConfig: { maxOutputTokens: 2048, temperature: 0.7 }
-      })
+    const data = await geminiCall({
+      contents: [{ parts: [{ text: prompt }] }],
+      generationConfig: { maxOutputTokens: 2048, temperature: 0.7 }
+    }, msg => {
+      const nameEl = document.querySelector('.air-name');
+      if (nameEl) nameEl.textContent = msg;
     });
-
-    if (!resp.ok) {
-      const err = await resp.json();
-      throw new Error(err.error?.message || `API 오류 ${resp.status}`);
-    }
-
-    const data = await resp.json();
     const fullText = data.candidates?.[0]?.content?.parts?.[0]?.text || '응답을 받지 못했습니다.';
 
     const contentEl = document.getElementById('stream-content');
@@ -1541,17 +1589,11 @@ JSON 형식으로만 응답하세요 (다른 텍스트 없이):
 
 최대 10개까지만 중요도 높은 순서로 알려주세요.`;
 
-    const resp = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        contents: [{ parts: [{ text: prompt }] }],
-        generationConfig: { maxOutputTokens: 1024, temperature: 0.2 }
-      })
-    });
-
-    if (!resp.ok) return;
-    const data = await resp.json();
+    const data = await geminiCall({
+      contents: [{ parts: [{ text: prompt }] }],
+      generationConfig: { maxOutputTokens: 1024, temperature: 0.2 }
+    }).catch(() => null);
+    if (!data) return;
     const text = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
 
     const jsonMatch = text.match(/\[[\s\S]*\]/);
