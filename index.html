@@ -906,45 +906,46 @@ const COUNTRIES = [
 const CMAP = {}; COUNTRIES.forEach(c=>CMAP[c.iso]=c);
 
 /* ══ STATIC WEEKLY INDICATOR DATA (fallback when no API key) ══
-   ※ 요일은 매달 달라지므로 지표명·중요도만 수록. 정확한 날짜/시간은 캘린더뷰(Investing.com) 참조.
+   ※ 발표 요일은 매달 달라지므로 생략. 시간(KST)은 통상 고정값이므로 표기.
+   ※ 정확한 날짜는 캘린더뷰(Investing.com) 참조.
 ══ */
 const STATIC_WEEKLY = {
   USA: [
-    {name:'소비자물가지수 (CPI)', importance:'high'},
-    {name:'연준 금리결정 (FOMC)', importance:'high'},
-    {name:'신규실업수당청구건수', importance:'medium'},
-    {name:'소매판매 (MoM)', importance:'medium'},
-    {name:'미시간대 소비자심리', importance:'low'},
+    {name:'소비자물가지수 (CPI)',   time:'21:30', importance:'high'},
+    {name:'연준 금리결정 (FOMC)',   time:'03:00', importance:'high'},
+    {name:'신규실업수당청구건수',    time:'21:30', importance:'medium'},
+    {name:'소매판매 (MoM)',         time:'21:30', importance:'medium'},
+    {name:'미시간대 소비자심리',    time:'23:00', importance:'low'},
   ],
   KOR: [
-    {name:'한국은행 기준금리 결정', importance:'high'},
-    {name:'수출입 동향', importance:'medium'},
-    {name:'소비자물가지수 (CPI)', importance:'medium'},
-    {name:'경상수지', importance:'low'},
+    {name:'한국은행 기준금리 결정', time:'10:00', importance:'high'},
+    {name:'수출입 동향',            time:'09:00', importance:'medium'},
+    {name:'소비자물가지수 (CPI)',   time:'08:00', importance:'medium'},
+    {name:'경상수지',               time:'08:00', importance:'low'},
   ],
   CHN: [
-    {name:'소비자물가지수 (CPI)', importance:'high'},
-    {name:'무역수지', importance:'high'},
-    {name:'생산자물가지수 (PPI)', importance:'medium'},
-    {name:'산업생산 (YoY)', importance:'medium'},
+    {name:'소비자물가지수 (CPI)',   time:'10:30', importance:'high'},
+    {name:'무역수지',               time:'10:30', importance:'high'},
+    {name:'생산자물가지수 (PPI)',   time:'10:30', importance:'medium'},
+    {name:'산업생산 (YoY)',         time:'10:00', importance:'medium'},
   ],
   JPN: [
-    {name:'BOJ 통화정책 결정', importance:'high'},
-    {name:'국내총생산 (GDP)', importance:'high'},
-    {name:'소비자물가지수 (CPI)', importance:'medium'},
-    {name:'무역수지', importance:'low'},
+    {name:'BOJ 통화정책 결정',      time:'12:00', importance:'high'},
+    {name:'국내총생산 (GDP)',        time:'08:50', importance:'high'},
+    {name:'소비자물가지수 (CPI)',   time:'08:30', importance:'medium'},
+    {name:'무역수지',               time:'08:50', importance:'low'},
   ],
   GBR: [
-    {name:'영란은행 금리결정 (BOE)', importance:'high'},
-    {name:'소비자물가지수 (CPI)', importance:'high'},
-    {name:'고용지표 (실업률)', importance:'medium'},
-    {name:'소매판매 (MoM)', importance:'medium'},
+    {name:'영란은행 금리결정 (BOE)',time:'21:00', importance:'high'},
+    {name:'소비자물가지수 (CPI)',   time:'17:00', importance:'high'},
+    {name:'고용지표 (실업률)',      time:'17:00', importance:'medium'},
+    {name:'소매판매 (MoM)',         time:'17:00', importance:'medium'},
   ],
   DEU: [
-    {name:'IFO 기업환경지수', importance:'high'},
-    {name:'소비자물가지수 (CPI)', importance:'high'},
-    {name:'ZEW 경제심리지수', importance:'medium'},
-    {name:'실업률', importance:'medium'},
+    {name:'IFO 기업환경지수',       time:'17:00', importance:'high'},
+    {name:'소비자물가지수 (CPI)',   time:'15:00', importance:'high'},
+    {name:'ZEW 경제심리지수',       time:'18:00', importance:'medium'},
+    {name:'실업률',                 time:'14:55', importance:'medium'},
   ],
 };
 
@@ -1059,10 +1060,10 @@ function onCountryHover(ev, d, el, tipId) {
         </div>`;
       }).join('') + '</div>';
 
-      // Show disclaimer only for static data (no day/time accuracy guarantee)
+      // Show disclaimer only for static data (day is unknown, time is approximate)
       if (result.isStatic) {
         evHtml += `<div style="margin-top:5px;padding:4px 6px;background:rgba(255,170,0,.07);border:1px solid rgba(255,170,0,.2);border-radius:5px;font-size:8px;color:var(--mid);line-height:1.5;">
-          ⚠️ 정확한 날짜·시간은 캘린더뷰(Investing.com) 참조<br>API 키 입력 시 실시간 일정 조회 가능
+          ⚠️ 시간은 통상값 / 정확한 <u>날짜</u>는 캘린더뷰 참조
         </div>`;
       }
     } else {
@@ -1109,7 +1110,7 @@ async function onCountryClick(iso3) {
   // If no API key, show indicator list (no time info) + guidance
   if (!apiKey) {
     const staticNote = `<div style="background:rgba(255,170,0,.06);border:1px solid rgba(255,170,0,.2);border-radius:7px;padding:9px 11px;font-size:10px;color:var(--mid);line-height:1.7;margin-bottom:10px;">
-      ⚠️ 지표명·중요도만 표시됩니다.<br>정확한 발표 날짜/시간은 <strong>캘린더뷰(Investing.com)</strong>에서 확인하세요.
+      ⚠️ 시간은 통상 고정값입니다. 정확한 <strong>발표 날짜</strong>는 <strong>캘린더뷰(Investing.com)</strong>에서 확인하세요.
     </div>`;
     resultArea.innerHTML = staticNote + `
       <div style="margin-bottom:10px;">
@@ -1120,6 +1121,7 @@ async function onCountryClick(iso3) {
             <span style="color:${impColor};font-size:10px;">●</span>
             <div style="flex:1;">
               <div style="font-size:11px;color:var(--text);">${ev.name}</div>
+              ${ev.time ? `<div style="font-size:9px;color:var(--dimmer);font-family:'IBM Plex Mono',monospace;">${ev.time} KST</div>` : ''}
             </div>
           </div>`;
         }).join('')}
