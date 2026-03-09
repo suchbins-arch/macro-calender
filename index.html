@@ -1,0 +1,1600 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>글로벌 매크로 경제지표 대시보드</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.8.5/d3.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/topojson/3.0.2/topojson.min.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600;700&family=Noto+Sans+KR:wght@300;400;500;700&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #05080f;
+  --s1: #0a1220;
+  --s2: #0f1a2e;
+  --s3: #162035;
+  --border: #1c2d44;
+  --border2: #263d58;
+  --accent: #00e5ff;
+  --a2: #ff5c38;
+  --a3: #39ffa0;
+  --a4: #ffcc00;
+  --text: #ddeeff;
+  --dim: #5a7a9a;
+  --dimmer: #2a3f55;
+  --high: #ff3355;
+  --mid: #ffaa00;
+  --low: #22cc66;
+}
+* { margin: 0; padding: 0; box-sizing: border-box; }
+html, body { height: 100%; overflow: hidden; }
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: 'Noto Sans KR', sans-serif;
+  display: flex;
+  flex-direction: column;
+  transition: filter .3s;
+}
+body.bw-mode {
+  filter: grayscale(100%) contrast(1.08);
+}
+
+/* ── HEADER ─────────────────────────────────────────── */
+header {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 0 20px;
+  height: 54px;
+  border-bottom: 1px solid var(--border);
+  background: rgba(10, 18, 32, 0.98);
+  backdrop-filter: blur(12px);
+  flex-shrink: 0;
+  z-index: 100;
+}
+
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.brand-icon {
+  width: 34px; height: 34px;
+  background: linear-gradient(135deg, #003aaa, #0099cc);
+  border-radius: 9px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 18px;
+  box-shadow: 0 0 14px rgba(0, 153, 204, 0.3);
+}
+.brand-name {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 13px;
+  letter-spacing: 3px;
+  color: var(--accent);
+}
+.brand-sub {
+  font-size: 9px;
+  color: var(--dim);
+  letter-spacing: 1px;
+  margin-top: 2px;
+}
+.live-dot {
+  display: inline-block;
+  width: 5px; height: 5px;
+  background: var(--a3);
+  border-radius: 50%;
+  margin-right: 5px;
+  animation: blink 1.8s infinite;
+}
+@keyframes blink { 0%,100%{opacity:1} 50%{opacity:.3} }
+
+.hsep { width: 1px; height: 28px; background: var(--border); flex-shrink: 0; }
+
+/* Tab switcher */
+.view-tabs {
+  display: flex;
+  gap: 3px;
+  background: var(--s2);
+  border: 1px solid var(--border);
+  border-radius: 9px;
+  padding: 3px;
+}
+.vtab {
+  padding: 5px 14px;
+  border-radius: 7px;
+  border: none;
+  background: none;
+  color: var(--dim);
+  font-size: 11px;
+  cursor: pointer;
+  font-family: 'Noto Sans KR', sans-serif;
+  font-weight: 500;
+  transition: all .2s;
+  white-space: nowrap;
+}
+.vtab.on {
+  background: var(--accent);
+  color: #000;
+  font-weight: 700;
+}
+
+/* B&W Toggle Button */
+.bw-toggle {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  padding: 5px 12px;
+  border-radius: 9px;
+  border: 1px solid var(--border);
+  background: var(--s2);
+  color: var(--dim);
+  font-size: 11px;
+  cursor: pointer;
+  font-family: 'Noto Sans KR', sans-serif;
+  transition: all .2s;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+.bw-toggle:hover { border-color: var(--border2); color: var(--text); }
+.bw-toggle.on {
+  background: rgba(255,255,255,.08);
+  border-color: rgba(255,255,255,.35);
+  color: #fff;
+}
+
+/* Country filter pills */
+.country-filter {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex: 1;
+  overflow-x: auto;
+  padding: 0 4px;
+}
+.cf-label {
+  font-size: 9px;
+  letter-spacing: 2px;
+  color: var(--dim);
+  font-family: 'IBM Plex Mono', monospace;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+.cpill {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 10px;
+  border-radius: 14px;
+  border: 1px solid var(--border);
+  background: none;
+  color: var(--dim);
+  font-size: 11px;
+  cursor: pointer;
+  transition: all .15s;
+  white-space: nowrap;
+  font-family: 'Noto Sans KR', sans-serif;
+}
+.cpill:hover { border-color: var(--border2); color: var(--text); }
+.cpill.on {
+  background: rgba(0, 229, 255, 0.1);
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+/* Header stats */
+.hstats { display: flex; gap: 18px; flex-shrink: 0; }
+.hs { text-align: right; }
+.hs-l { font-size: 8px; letter-spacing: 2px; color: var(--dim); font-family: 'IBM Plex Mono', monospace; }
+.hs-v { font-family: 'IBM Plex Mono', monospace; font-size: 13px; font-weight: 600; }
+
+/* ── MAIN LAYOUT ──────────────────────────────────────── */
+.main {
+  display: flex;
+  flex: 1;
+  overflow: hidden;
+}
+
+/* ── LEFT: Mini Map ────────────────────────────────────── */
+.left-col {
+  width: 260px;
+  flex-shrink: 0;
+  border-right: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  background: var(--s1);
+  overflow: hidden;
+}
+
+.map-wrap {
+  height: 170px;
+  flex-shrink: 0;
+  position: relative;
+  overflow: hidden;
+  background: radial-gradient(ellipse at 50% 60%, #081828 0%, var(--bg) 80%);
+  border-bottom: 1px solid var(--border);
+}
+#world-map { width: 100%; height: 100%; }
+
+.map-overlay-tip {
+  position: absolute;
+  bottom: 7px; right: 8px;
+  font-size: 8px; color: var(--dimmer);
+  letter-spacing: 1px; pointer-events: none;
+}
+
+/* Map tooltip */
+.mtip {
+  position: absolute;
+  background: rgba(10,18,32,.97);
+  border: 1px solid var(--accent);
+  border-radius: 7px;
+  padding: 7px 11px;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity .12s;
+  z-index: 50;
+  font-size: 10px;
+  box-shadow: 0 0 14px rgba(0,229,255,.15);
+  max-width: 220px;
+}
+.mtip.show { opacity: 1; }
+.mt-cn { color: var(--accent); font-weight: 700; margin-bottom: 4px; font-size: 11px; }
+.mt-info { color: var(--dim); font-size: 9px; margin-bottom: 4px; }
+.mt-events { margin-top: 4px; }
+.mt-ev {
+  display: flex;
+  align-items: flex-start;
+  gap: 5px;
+  padding: 3px 0;
+  border-top: 1px solid rgba(255,255,255,.05);
+  font-size: 9px;
+  line-height: 1.4;
+}
+.mt-ev-dot { flex-shrink: 0; margin-top: 2px; font-size: 7px; }
+.mt-ev-name { color: var(--text); flex: 1; }
+.mt-ev-time { color: var(--dimmer); font-family: 'IBM Plex Mono', monospace; white-space: nowrap; }
+.mt-loading { color: var(--dimmer); font-size: 9px; font-style: italic; }
+
+/* Country list */
+.cl-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 9px 13px 7px;
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+}
+.cl-title { font-size: 8px; letter-spacing: 2px; color: var(--dim); font-family: 'IBM Plex Mono', monospace; text-transform: uppercase; }
+.cl-clear { font-size: 9px; color: var(--dimmer); background: none; border: none; cursor: pointer; transition: color .15s; }
+.cl-clear:hover { color: var(--a2); }
+
+.cl-search {
+  margin: 7px 10px;
+  padding: 5px 10px;
+  background: var(--s2);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  color: var(--text);
+  font-size: 11px;
+  outline: none;
+  width: calc(100% - 20px);
+  font-family: 'Noto Sans KR', sans-serif;
+}
+.cl-search:focus { border-color: var(--accent); }
+.cl-search::placeholder { color: var(--dimmer); }
+
+.cl-list { flex: 1; overflow-y: auto; padding: 3px 8px 8px; }
+
+.ci {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 6px 8px;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all .12s;
+  margin-bottom: 2px;
+  border: 1px solid transparent;
+}
+.ci:hover { background: var(--s2); border-color: var(--border); }
+.ci.on { background: rgba(0,229,255,.06); border-color: rgba(0,229,255,.3); }
+.ci-check {
+  width: 14px; height: 14px;
+  border-radius: 3px;
+  border: 1.5px solid var(--border2);
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
+  font-size: 8px;
+  transition: all .15s;
+}
+.ci.on .ci-check { background: var(--accent); border-color: var(--accent); color: #000; }
+.ci-flag { font-size: 14px; }
+.ci-name { font-size: 11px; color: var(--dim); flex: 1; transition: color .15s; }
+.ci.on .ci-name { color: var(--accent); }
+.ci-code {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 8px;
+  color: var(--dimmer);
+}
+
+/* ── CENTER: Iframe Area ────────────────────────────────── */
+.center-col {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  min-width: 0;
+}
+
+/* View: calendar */
+.view-panel {
+  display: none;
+  flex: 1;
+  flex-direction: column;
+  overflow: hidden;
+}
+.view-panel.show { display: flex; }
+
+/* Investing.com calendar iframe */
+.calendar-wrap {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  background: var(--s1);
+}
+
+.cal-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 9px 14px;
+  border-bottom: 1px solid var(--border);
+  background: var(--s2);
+  flex-shrink: 0;
+}
+.cal-tb-label {
+  font-size: 9px;
+  letter-spacing: 2px;
+  color: var(--dim);
+  font-family: 'IBM Plex Mono', monospace;
+}
+.cal-period {
+  display: flex;
+  gap: 4px;
+}
+.cperiod-btn {
+  padding: 3px 11px;
+  border-radius: 12px;
+  border: 1px solid var(--border);
+  background: none;
+  color: var(--dim);
+  font-size: 10px;
+  cursor: pointer;
+  transition: all .2s;
+  font-family: 'Noto Sans KR', sans-serif;
+}
+.cperiod-btn:hover { border-color: var(--border2); color: var(--text); }
+.cperiod-btn.on { border-color: var(--accent); color: var(--accent); background: rgba(0,229,255,.08); }
+
+.source-badge {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 9px;
+  color: var(--dimmer);
+  font-family: 'IBM Plex Mono', monospace;
+}
+.src-logo {
+  background: var(--s3);
+  border: 1px solid var(--border);
+  border-radius: 5px;
+  padding: 3px 8px;
+  color: #06529D;
+  font-weight: 700;
+  font-size: 10px;
+  font-family: Arial, sans-serif;
+}
+
+.iframe-outer {
+  flex: 1;
+  overflow: hidden;
+  position: relative;
+  background: #fff;
+}
+
+#cal-iframe {
+  width: 100%;
+  height: 100%;
+  border: none;
+  display: block;
+}
+
+/* ── RIGHT: Detail + AI Analysis ──────────────────────── */
+.right-col {
+  width: 320px;
+  flex-shrink: 0;
+  border-left: 1px solid var(--border);
+  background: var(--s1);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.rp-head {
+  padding: 13px 16px;
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+}
+.rp-label { font-size: 8px; letter-spacing: 2px; color: var(--dim); font-family: 'IBM Plex Mono', monospace; margin-bottom: 5px; }
+.rp-title { font-size: 14px; font-weight: 700; color: var(--accent); line-height: 1.3; }
+.rp-title.ph { color: var(--dimmer); font-weight: 400; font-size: 12px; }
+
+/* AI Analysis section */
+.ai-section {
+  flex: 1;
+  overflow-y: auto;
+  padding: 14px 15px;
+}
+
+.api-setup {
+  background: var(--s2);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 14px;
+  margin-bottom: 14px;
+}
+.api-setup-title {
+  font-size: 10px;
+  letter-spacing: 2px;
+  color: var(--dim);
+  font-family: 'IBM Plex Mono', monospace;
+  margin-bottom: 10px;
+}
+.api-row { display: flex; gap: 6px; align-items: center; }
+.api-input {
+  flex: 1;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 7px;
+  color: var(--text);
+  font-size: 10px;
+  padding: 6px 10px;
+  outline: none;
+  font-family: 'IBM Plex Mono', monospace;
+  transition: border-color .2s;
+}
+.api-input:focus { border-color: var(--accent); }
+.api-input::placeholder { color: var(--dimmer); }
+.api-save {
+  background: var(--s3);
+  border: 1px solid var(--border2);
+  color: var(--dim);
+  padding: 6px 10px;
+  border-radius: 7px;
+  font-size: 10px;
+  cursor: pointer;
+  transition: all .2s;
+  white-space: nowrap;
+}
+.api-save:hover { border-color: var(--accent); color: var(--accent); }
+.api-status { font-size: 9px; font-family: 'IBM Plex Mono', monospace; margin-top: 5px; }
+.api-status.ok { color: var(--a3); }
+.api-status.err { color: var(--a2); }
+
+.ai-search-box { margin-bottom: 12px; }
+.ai-search-label { font-size: 9px; letter-spacing: 1px; color: var(--dim); font-family: 'IBM Plex Mono', monospace; margin-bottom: 6px; }
+.ai-search-input {
+  width: 100%;
+  background: var(--s2);
+  border: 1px solid var(--border);
+  border-radius: 7px;
+  color: var(--text);
+  font-size: 11px;
+  padding: 7px 11px;
+  outline: none;
+  font-family: 'Noto Sans KR', sans-serif;
+  margin-bottom: 6px;
+  transition: border-color .2s;
+}
+.ai-search-input:focus { border-color: var(--accent); }
+.ai-search-input::placeholder { color: var(--dimmer); }
+.ai-btn {
+  width: 100%;
+  padding: 8px;
+  background: linear-gradient(135deg, #003aaa, #0088cc);
+  border: none;
+  border-radius: 8px;
+  color: #fff;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  font-family: 'Noto Sans KR', sans-serif;
+  transition: all .2s;
+  position: relative;
+  overflow: hidden;
+}
+.ai-btn:hover { background: linear-gradient(135deg, #0055cc, #00aaee); transform: translateY(-1px); }
+.ai-btn:disabled { opacity: .5; cursor: not-allowed; transform: none; }
+.ai-btn.loading::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,.2), transparent);
+  animation: shimmer 1.2s infinite;
+}
+@keyframes shimmer { 0%{transform:translateX(-100%)} 100%{transform:translateX(100%)} }
+
+/* AI Response */
+.ai-result {
+  background: var(--s2);
+  border: 1px solid var(--border);
+  border-radius: 9px;
+  padding: 13px;
+  margin-top: 10px;
+}
+.air-header {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  margin-bottom: 10px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--border);
+  flex-wrap: wrap;
+}
+.air-icon { font-size: 14px; }
+.air-name { font-size: 12px; font-weight: 700; color: var(--accent); flex: 1; }
+.air-badge {
+  font-size: 8px;
+  background: rgba(0,229,255,.1);
+  border: 1px solid rgba(0,229,255,.2);
+  color: var(--accent);
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-family: 'IBM Plex Mono', monospace;
+}
+
+/* Investment Strategy Card (Map Click) */
+.strat-card {
+  background: var(--s3);
+  border: 1px solid var(--border);
+  border-radius: 9px;
+  padding: 11px 13px;
+  margin-bottom: 8px;
+  transition: border-color .2s;
+}
+.strat-card:hover { border-color: var(--border2); }
+.sc-top {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+.sc-info { flex: 1; }
+.sc-name { font-size: 11px; color: var(--text); font-weight: 600; line-height: 1.4; margin-bottom: 2px; }
+.sc-time { font-size: 9px; color: var(--dimmer); font-family: 'IBM Plex Mono', monospace; }
+.sc-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 3px 9px;
+  border-radius: 10px;
+  font-size: 10px;
+  font-weight: 700;
+  flex-shrink: 0;
+}
+.scb-매수 { background: rgba(57,255,160,.12); color: var(--a3); border: 1px solid rgba(57,255,160,.3); }
+.scb-매도 { background: rgba(255,92,56,.12); color: var(--a2); border: 1px solid rgba(255,92,56,.3); }
+.scb-중립 { background: rgba(0,229,255,.1); color: var(--accent); border: 1px solid rgba(0,229,255,.2); }
+.scb-관망 { background: rgba(90,122,154,.1); color: var(--dim); border: 1px solid var(--border); }
+.sc-note { font-size: 10px; color: var(--dim); line-height: 1.7; margin-bottom: 8px; }
+.sc-assets {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+.sc-asset-tag {
+  font-size: 9px;
+  padding: 2px 7px;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  color: var(--dimmer);
+  background: var(--s2);
+}
+
+.sc-loading {
+  text-align: center;
+  padding: 20px;
+  color: var(--dimmer);
+  font-size: 11px;
+}
+
+.mrow {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 7px 10px;
+  background: var(--s3);
+  border-radius: 7px;
+  border: 1px solid var(--border);
+  margin-bottom: 7px;
+}
+.mrow-l { font-size: 10px; color: var(--dim); }
+.mrow-v { font-family: 'IBM Plex Mono', monospace; font-size: 14px; font-weight: 700; }
+.mrow-v.actual { color: var(--accent); }
+.mrow-v.beat { color: var(--a3); }
+.mrow-v.miss { color: var(--a2); }
+.mrow-v.prev { color: var(--dim); }
+.mrow-v.pending { color: var(--dimmer); font-size: 11px; }
+
+.strat-badge {
+  display: inline-block;
+  padding: 3px 10px;
+  border-radius: 10px;
+  font-size: 11px;
+  font-weight: 700;
+  margin-bottom: 8px;
+}
+.sb-매수 { background: rgba(57,255,160,.12); color: var(--a3); border: 1px solid rgba(57,255,160,.3); }
+.sb-매도 { background: rgba(255,92,56,.12); color: var(--a2); border: 1px solid rgba(255,92,56,.3); }
+.sb-중립 { background: rgba(0,229,255,.1); color: var(--accent); border: 1px solid rgba(0,229,255,.2); }
+.sb-관망 { background: rgba(90,122,154,.1); color: var(--dim); border: 1px solid var(--border); }
+
+.air-section { font-size: 8px; letter-spacing: 2px; color: var(--dimmer); font-family: 'IBM Plex Mono', monospace; margin: 11px 0 5px; text-transform: uppercase; }
+.air-text { font-size: 11px; color: var(--dim); line-height: 1.8; }
+
+/* Streaming text effect */
+@keyframes cursor-blink { 0%,100%{opacity:1} 50%{opacity:0} }
+.streaming::after { content:'▋'; color:var(--accent); animation: cursor-blink .8s infinite; font-size:11px; }
+
+/* Scrollbars */
+::-webkit-scrollbar { width: 3px; height: 3px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 2px; }
+
+/* Map countries */
+.mc { cursor: pointer; stroke: #1a2d40; stroke-width: .4px; transition: all .15s; }
+.mc:hover { filter: brightness(2); stroke: var(--accent); stroke-width: 1px; }
+.mc.on { stroke: var(--accent); stroke-width: 1px; }
+
+/* Section divider in right panel */
+.rp-section-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+.rp-section-label {
+  font-size: 9px;
+  letter-spacing: 2px;
+  color: var(--dim);
+  font-family: 'IBM Plex Mono', monospace;
+  text-transform: uppercase;
+}
+.rp-section-line {
+  flex: 1;
+  height: 1px;
+  background: var(--border);
+}
+
+/* Notify panel */
+.notify-panel-wrap { margin-bottom: 12px; }
+</style>
+</head>
+<body>
+
+<!-- ═══ HEADER ═══ -->
+<header>
+  <div class="brand">
+    <div class="brand-icon">🌐</div>
+    <div>
+      <div class="brand-name">MACRO CAL</div>
+      <div class="brand-sub"><span class="live-dot"></span>글로벌 경제지표 실시간</div>
+    </div>
+  </div>
+  <div class="hsep"></div>
+
+  <!-- View Tabs -->
+  <div class="view-tabs">
+    <button class="vtab on" onclick="switchView('calendar',this)">📅 캘린더</button>
+    <button class="vtab" onclick="switchView('map',this)">🗺️ 지도뷰</button>
+  </div>
+
+  <!-- B&W Toggle -->
+  <button class="bw-toggle" id="bw-btn" onclick="toggleBW()">⬛ 흑백</button>
+
+  <div class="hsep"></div>
+
+  <!-- Country quick pills (top 8) -->
+  <div class="country-filter" id="quick-pills">
+    <span class="cf-label">국가</span>
+  </div>
+
+  <div class="hstats">
+    <button id="notify-btn" class="cpill" onclick="toggleNotify()" style="font-size:10px;padding:5px 12px;">🔕 알림 OFF</button>
+    <div class="hs"><div class="hs-l">현지시간</div><div class="hs-v" id="kst-clock" style="color:var(--accent)">--:--</div></div>
+    <div class="hs"><div class="hs-l">KST 기준</div><div class="hs-v" id="kst-date" style="color:var(--dim)">----</div></div>
+  </div>
+</header>
+
+<!-- ═══ MAIN ═══ -->
+<div class="main">
+
+  <!-- LEFT: Mini Map + Country List -->
+  <div class="left-col">
+    <div class="map-wrap">
+      <svg id="world-map"></svg>
+      <div class="mtip" id="mtip"></div>
+      <div class="map-overlay-tip">클릭으로 필터</div>
+    </div>
+
+    <div class="cl-head">
+      <span class="cl-title">국가 필터</span>
+      <button class="cl-clear" onclick="clearCountries()">전체해제</button>
+    </div>
+    <input class="cl-search" placeholder="국가 검색..." oninput="filterCountryList(this.value)" id="cl-search">
+    <div class="cl-list" id="cl-list"></div>
+  </div>
+
+  <!-- CENTER VIEWS -->
+  <div class="center-col">
+
+    <!-- VIEW: Calendar (Investing.com iframe) -->
+    <div class="view-panel show" id="view-calendar">
+      <div class="calendar-wrap">
+        <div class="cal-toolbar">
+          <span class="cal-tb-label">기간</span>
+          <div class="cal-period">
+            <button class="cperiod-btn" data-p="day" onclick="setCalPeriod('day',this)">오늘</button>
+            <button class="cperiod-btn on" data-p="week" onclick="setCalPeriod('week',this)">이번주</button>
+            <button class="cperiod-btn" data-p="month" onclick="setCalPeriod('month',this)">이번달</button>
+          </div>
+          <span style="font-size:10px;color:var(--dimmer);margin-left:8px;">※ 중요도·실제치·예상치·이전치 실시간 반영</span>
+          <div class="source-badge">
+            <span>데이터 제공</span>
+            <span class="src-logo">Investing.com</span>
+          </div>
+        </div>
+
+        <div class="iframe-outer">
+          <iframe
+            id="cal-iframe"
+            src="https://sslecal2.investing.com?columns=exc_flags,exc_currency,exc_importance,exc_actual,exc_forecast,exc_previous&features=datepicker,timezone&countries=110,11,37,35,4,17&calType=week&timeZone=88&lang=18"
+            frameborder="0"
+            allowtransparency="true"
+            marginwidth="0"
+            marginheight="0"
+            style="width:100%;height:100%;border:none;display:block;background:#fff;"
+          ></iframe>
+        </div>
+      </div>
+    </div>
+
+    <!-- VIEW: Map (World Map Big) -->
+    <div class="view-panel" id="view-map">
+      <div style="padding:12px 14px;border-bottom:1px solid var(--border);background:var(--s2);font-size:10px;color:var(--dim);display:flex;align-items:center;gap:8px;">
+        <span style="font-family:'IBM Plex Mono',monospace;font-size:8px;letter-spacing:2px;color:var(--dimmer);">세계지도뷰</span>
+        <span>국가를 클릭하면 우측에 투자전략 분석이 표시됩니다</span>
+      </div>
+      <div style="flex:1;position:relative;overflow:hidden;background:radial-gradient(ellipse at 50% 55%,#081828,var(--bg));">
+        <svg id="big-map" style="width:100%;height:100%;"></svg>
+        <div class="mtip" id="bmtip"></div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- RIGHT: AI Analysis Panel -->
+  <div class="right-col">
+    <div class="rp-head">
+      <div class="rp-label">🤖 AI 경제 분석</div>
+      <div class="rp-title ph" id="rp-title">지표를 검색하거나 국가를 선택하세요</div>
+    </div>
+
+    <div class="ai-section">
+      <!-- API Key setup -->
+      <div class="api-setup">
+        <div class="api-setup-title">GEMINI API KEY</div>
+        <div class="api-row">
+          <input class="api-input" id="api-key" type="password" placeholder="AIzaSy..." autocomplete="off">
+          <button class="api-save" onclick="saveKey()">저장</button>
+        </div>
+        <div class="api-status" id="api-status"></div>
+      </div>
+
+      <!-- 알림 패널 -->
+      <div class="notify-panel-wrap">
+        <div class="rp-section-head">
+          <span class="rp-section-label">📋 오늘의 경제지표</span>
+          <div class="rp-section-line"></div>
+        </div>
+        <div id="notify-panel">
+          <div style="font-size:10px;color:var(--dimmer);padding:8px;text-align:center;">알림을 활성화하면 오늘의 지표가 표시됩니다</div>
+        </div>
+      </div>
+
+      <!-- AI Search -->
+      <div class="ai-search-box">
+        <div class="rp-section-head">
+          <span class="rp-section-label">지표 분석 요청</span>
+          <div class="rp-section-line"></div>
+        </div>
+        <input class="ai-search-input" id="ai-query" placeholder="예: 미국 CPI 3.2% 발표 — 시장 영향 분석해줘" onkeydown="if(event.key==='Enter')runAI()">
+        <button class="ai-btn" id="ai-btn" onclick="runAI()">✨ Gemini AI 분석 실행</button>
+      </div>
+
+      <!-- AI Result area -->
+      <div id="ai-result-area">
+        <div style="text-align:center;padding:30px 16px;color:var(--dimmer);">
+          <div style="font-size:36px;opacity:.2;margin-bottom:10px;">🤖</div>
+          <div style="font-size:11px;line-height:1.8;">
+            좌측 캘린더에서 발표된 수치를 확인 후<br>
+            분석하고 싶은 지표를 위 검색창에 입력하거나<br>
+            지도뷰에서 국가를 클릭하세요
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+/* ══ STATE ══ */
+let apiKey = localStorage.getItem('macro_gemini_key') || '';
+let activeCountries = new Set(['USA','KOR','CHN','JPN','GBR','DEU']);
+let currentView = 'calendar';
+let bigMapG, bigMapPath;
+let bwMode = false;
+
+/* ══ B&W MODE ══ */
+function toggleBW() {
+  bwMode = !bwMode;
+  const btn = document.getElementById('bw-btn');
+  if (bwMode) {
+    document.body.classList.add('bw-mode');
+    btn.classList.add('on');
+    btn.textContent = '🌈 컬러';
+  } else {
+    document.body.classList.remove('bw-mode');
+    btn.classList.remove('on');
+    btn.textContent = '⬛ 흑백';
+  }
+}
+
+/* ══ API KEY ══ */
+if (apiKey) {
+  document.getElementById('api-key').value = apiKey;
+  document.getElementById('api-status').textContent = '✓ 저장된 키 로드됨';
+  document.getElementById('api-status').className = 'api-status ok';
+}
+
+function saveKey() {
+  apiKey = document.getElementById('api-key').value.trim();
+  if (!apiKey) { showApiStatus('키를 입력하세요','err'); return; }
+  localStorage.setItem('macro_gemini_key', apiKey);
+  // Clear caches when key changes
+  weeklyIndicatorsCache = {};
+  showApiStatus('✓ 저장 완료','ok');
+}
+function showApiStatus(msg, cls) {
+  const el = document.getElementById('api-status');
+  el.textContent = msg; el.className = 'api-status ' + cls;
+}
+
+/* ══ CLOCK ══ */
+function updateClock() {
+  const now = new Date();
+  const kst = new Date(now.toLocaleString('en-US', {timeZone:'Asia/Seoul'}));
+  document.getElementById('kst-clock').textContent =
+    kst.toLocaleTimeString('ko-KR',{hour:'2-digit',minute:'2-digit',second:'2-digit',hour12:false});
+  document.getElementById('kst-date').textContent =
+    kst.toLocaleDateString('ko-KR',{month:'short',day:'numeric',weekday:'short'});
+}
+updateClock();
+setInterval(updateClock, 1000);
+
+/* ══ COUNTRIES DATA ══ */
+const COUNTRIES = [
+  {iso:'USA',name:'미국',flag:'🇺🇸',invId:110},
+  {iso:'KOR',name:'한국',flag:'🇰🇷',invId:11},
+  {iso:'CHN',name:'중국',flag:'🇨🇳',invId:37},
+  {iso:'JPN',name:'일본',flag:'🇯🇵',invId:35},
+  {iso:'GBR',name:'영국',flag:'🇬🇧',invId:4},
+  {iso:'DEU',name:'독일',flag:'🇩🇪',invId:17},
+];
+const CMAP = {}; COUNTRIES.forEach(c=>CMAP[c.iso]=c);
+
+/* ══ STATIC WEEKLY INDICATOR DATA (fallback when no API key) ══ */
+const STATIC_WEEKLY = {
+  USA: [
+    {name:'소비자물가지수 (CPI)', time:'화 09:30', importance:'high'},
+    {name:'연준 금리결정 (FOMC)', time:'수 03:00', importance:'high'},
+    {name:'신규실업수당청구건수', time:'목 09:30', importance:'medium'},
+    {name:'소매판매 (MoM)', time:'금 09:30', importance:'medium'},
+    {name:'미시간대 소비자심리', time:'금 22:00', importance:'low'},
+  ],
+  KOR: [
+    {name:'한국은행 기준금리 결정', time:'목 10:00', importance:'high'},
+    {name:'수출입 동향', time:'월 09:00', importance:'medium'},
+    {name:'소비자물가지수 (CPI)', time:'화 08:00', importance:'medium'},
+    {name:'경상수지', time:'수 08:00', importance:'low'},
+  ],
+  CHN: [
+    {name:'소비자물가지수 (CPI)', time:'수 10:30', importance:'high'},
+    {name:'무역수지', time:'목 10:30', importance:'high'},
+    {name:'생산자물가지수 (PPI)', time:'수 10:30', importance:'medium'},
+    {name:'산업생산 (YoY)', time:'금 10:00', importance:'medium'},
+  ],
+  JPN: [
+    {name:'BOJ 통화정책 결정', time:'목 12:00', importance:'high'},
+    {name:'국내총생산 (GDP)', time:'화 08:50', importance:'high'},
+    {name:'소비자물가지수 (CPI)', time:'금 08:30', importance:'medium'},
+    {name:'무역수지', time:'수 08:50', importance:'low'},
+  ],
+  GBR: [
+    {name:'영란은행 금리결정 (BOE)', time:'목 21:00', importance:'high'},
+    {name:'소비자물가지수 (CPI)', time:'수 17:00', importance:'high'},
+    {name:'고용지표 (실업률)', time:'화 17:00', importance:'medium'},
+    {name:'소매판매 (MoM)', time:'금 17:00', importance:'medium'},
+  ],
+  DEU: [
+    {name:'IFO 기업환경지수', time:'월 17:00', importance:'high'},
+    {name:'소비자물가지수 (CPI)', time:'수 15:00', importance:'high'},
+    {name:'ZEW 경제심리지수', time:'화 18:00', importance:'medium'},
+    {name:'실업률', time:'목 14:55', importance:'medium'},
+  ],
+};
+
+/* ══ WEEKLY INDICATORS CACHE ══ */
+let weeklyIndicatorsCache = {};  // iso3 → {data, ts}
+const CACHE_TTL = 30 * 60 * 1000;  // 30 minutes
+
+async function fetchWeeklyIndicators(iso3) {
+  const now = Date.now();
+  if (weeklyIndicatorsCache[iso3] && (now - weeklyIndicatorsCache[iso3].ts) < CACHE_TTL) {
+    return weeklyIndicatorsCache[iso3].data;
+  }
+
+  // Without API key, use static data
+  if (!apiKey) {
+    const data = STATIC_WEEKLY[iso3] || null;
+    if (data) weeklyIndicatorsCache[iso3] = {data, ts: now};
+    return data;
+  }
+
+  const country = CMAP[iso3];
+  if (!country) return null;
+
+  const today = new Date();
+  const weekStart = new Date(today); weekStart.setDate(today.getDate() - today.getDay() + 1);
+  const weekEnd = new Date(weekStart); weekEnd.setDate(weekStart.getDate() + 6);
+  const fmt = d => d.toLocaleDateString('ko-KR',{month:'numeric',day:'numeric'});
+
+  try {
+    const prompt = `${country.name}(${iso3})의 이번주(${fmt(weekStart)}~${fmt(weekEnd)}) 주요 경제지표 발표 일정을 알려주세요.
+
+JSON 배열 형식으로만 응답 (다른 텍스트 없이):
+[{"name":"지표명","time":"요일 HH:MM(KST)","importance":"high|medium|low"}]
+
+최대 5개, 중요도 높은 순으로.`;
+
+    const resp = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        contents: [{ parts: [{ text: prompt }] }],
+        generationConfig: { maxOutputTokens: 512, temperature: 0.1 }
+      })
+    });
+
+    if (!resp.ok) throw new Error('API error');
+    const d = await resp.json();
+    const text = d.candidates?.[0]?.content?.parts?.[0]?.text || '';
+    const jsonMatch = text.match(/\[[\s\S]*?\]/);
+    if (!jsonMatch) throw new Error('No JSON');
+
+    const data = JSON.parse(jsonMatch[0]);
+    weeklyIndicatorsCache[iso3] = {data, ts: now};
+    return data;
+  } catch(e) {
+    // Fallback to static
+    const data = STATIC_WEEKLY[iso3] || null;
+    if (data) weeklyIndicatorsCache[iso3] = {data, ts: now};
+    return data;
+  }
+}
+
+/* ══ MAP HOVER DEBOUNCE ══ */
+let hoverDebounceTimer = null;
+let currentHoverIso = null;
+let tooltipPending = {};  // iso → loading state
+
+function onCountryHover(ev, d, el, tipId) {
+  const tt = document.getElementById(tipId);
+  if (!d.iso3) { tt.classList.remove('show'); return; }
+
+  const c = CMAP[d.iso3];
+  const countryLabel = c ? `${c.flag} ${c.name}` : d.iso3;
+  const selectedLabel = activeCountries.has(d.iso3) ? '<span style="color:var(--a3);font-size:9px;">✓ 선택됨</span>' : '<span style="color:var(--dimmer);font-size:9px;">클릭하여 선택</span>';
+
+  // Position tooltip
+  const r = el.getBoundingClientRect();
+  let x = ev.clientX - r.left + 14, y = ev.clientY - r.top - 44;
+  if (x + 230 > r.width) x -= 240;
+  if (y < 0) y = 8;
+  tt.style.left = x + 'px'; tt.style.top = y + 'px';
+
+  // Show immediately with basic info
+  tt.innerHTML = `<div class="mt-cn">${countryLabel}</div><div class="mt-info">${selectedLabel}</div><div class="mt-loading">이번주 지표 로딩 중...</div>`;
+  tt.classList.add('show');
+
+  currentHoverIso = d.iso3;
+
+  // Debounce 250ms before fetching
+  if (hoverDebounceTimer) clearTimeout(hoverDebounceTimer);
+  hoverDebounceTimer = setTimeout(async () => {
+    if (currentHoverIso !== d.iso3) return;
+    const indicators = await fetchWeeklyIndicators(d.iso3);
+    if (currentHoverIso !== d.iso3) return;  // May have moved away
+
+    let evHtml = '';
+    if (indicators && indicators.length > 0) {
+      evHtml = '<div class="mt-events">' + indicators.slice(0,4).map(ev => {
+        const dot = ev.importance === 'high' ? '<span style="color:var(--high)">●</span>'
+                  : ev.importance === 'medium' ? '<span style="color:var(--mid)">●</span>'
+                  : '<span style="color:var(--low)">●</span>';
+        return `<div class="mt-ev">
+          <span class="mt-ev-dot">${dot}</span>
+          <span class="mt-ev-name">${ev.name}</span>
+          <span class="mt-ev-time">(${ev.time})</span>
+        </div>`;
+      }).join('') + '</div>';
+    } else {
+      evHtml = '<div class="mt-loading" style="margin-top:4px;">이번주 주요 일정 없음</div>';
+    }
+
+    tt.innerHTML = `<div class="mt-cn">${countryLabel}</div><div class="mt-info">${selectedLabel}</div>${evHtml}`;
+  }, 250);
+}
+
+function onCountryLeave(tipId) {
+  currentHoverIso = null;
+  if (hoverDebounceTimer) clearTimeout(hoverDebounceTimer);
+  document.getElementById(tipId).classList.remove('show');
+}
+
+/* ══ MAP CLICK — RIGHT PANEL INVESTMENT STRATEGY ══ */
+async function onCountryClick(iso3) {
+  const c = CMAP[iso3];
+  const countryName = c ? `${c.flag} ${c.name}` : iso3;
+
+  // Update right panel header
+  const titleEl = document.getElementById('rp-title');
+  titleEl.textContent = `${countryName} — 이번주 투자전략`;
+  titleEl.classList.remove('ph');
+
+  // Show loading state
+  const resultArea = document.getElementById('ai-result-area');
+  resultArea.innerHTML = `<div class="sc-loading">
+    <div style="font-size:24px;opacity:.3;margin-bottom:8px;">📊</div>
+    <div>이번주 경제지표 분석 중...</div>
+  </div>`;
+
+  // Fetch indicators
+  const indicators = await fetchWeeklyIndicators(iso3);
+
+  if (!indicators || indicators.length === 0) {
+    resultArea.innerHTML = `<div style="text-align:center;padding:20px;color:var(--dimmer);font-size:11px;">이번주 주요 경제지표 일정을 찾지 못했습니다.</div>`;
+    return;
+  }
+
+  // If no API key, show indicator list + guidance
+  if (!apiKey) {
+    resultArea.innerHTML = `
+      <div style="margin-bottom:10px;">
+        <div class="rp-section-head"><span class="rp-section-label">이번주 주요 지표</span><div class="rp-section-line"></div></div>
+        ${indicators.map(ev => {
+          const impColor = ev.importance === 'high' ? 'var(--high)' : ev.importance === 'medium' ? 'var(--mid)' : 'var(--low)';
+          return `<div style="display:flex;align-items:center;gap:8px;padding:7px 10px;background:var(--s3);border:1px solid var(--border);border-radius:7px;margin-bottom:5px;">
+            <span style="color:${impColor};font-size:10px;">●</span>
+            <div style="flex:1;">
+              <div style="font-size:11px;color:var(--text);">${ev.name}</div>
+              <div style="font-size:9px;color:var(--dimmer);font-family:'IBM Plex Mono',monospace;">${ev.time}</div>
+            </div>
+          </div>`;
+        }).join('')}
+      </div>
+      <div style="background:rgba(0,229,255,.05);border:1px solid rgba(0,229,255,.15);border-radius:8px;padding:11px;font-size:10px;color:var(--dim);line-height:1.7;">
+        💡 Gemini API 키를 입력하면 각 지표별 <strong style="color:var(--accent)">매수/매도/중립/관망</strong> 전략과 투자 유의사항을 AI가 자동으로 분석해드립니다.
+      </div>`;
+    return;
+  }
+
+  // With API key — fetch investment strategy
+  const strategyHTML = await fetchInvestmentStrategy(iso3, countryName, indicators);
+  resultArea.innerHTML = strategyHTML;
+}
+
+async function fetchInvestmentStrategy(iso3, countryName, indicators) {
+  const indicatorList = indicators.map((ev,i)=>`${i+1}. ${ev.name} (${ev.time}, 중요도:${ev.importance})`).join('\n');
+
+  try {
+    const prompt = `당신은 글로벌 매크로 투자 전문가입니다. 이번주 ${countryName}의 경제지표 발표를 바탕으로 투자전략을 분석해주세요.
+
+이번주 예정 지표:
+${indicatorList}
+
+각 지표별로 아래 JSON 형식으로만 응답하세요 (다른 텍스트 없이):
+[{
+  "name": "지표명",
+  "time": "발표시간",
+  "importance": "high|medium|low",
+  "strategy": "매수|매도|중립|관망",
+  "note": "투자자 유의사항 2~3문장",
+  "assets": ["영향자산1","영향자산2","영향자산3"]
+}]`;
+
+    const resp = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        contents: [{ parts: [{ text: prompt }] }],
+        generationConfig: { maxOutputTokens: 1536, temperature: 0.5 }
+      })
+    });
+
+    if (!resp.ok) throw new Error(`API 오류 ${resp.status}`);
+    const data = await resp.json();
+    const text = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
+    const jsonMatch = text.match(/\[[\s\S]*\]/);
+    if (!jsonMatch) throw new Error('파싱 실패');
+
+    const cards = JSON.parse(jsonMatch[0]);
+    return renderStrategyCards(cards);
+
+  } catch(e) {
+    // Fallback: show indicators with generic strategy UI
+    return `<div style="color:var(--a2);font-size:11px;padding:10px;background:rgba(255,92,56,.06);border:1px solid rgba(255,92,56,.2);border-radius:8px;margin-bottom:10px;">
+      ⚠️ AI 분석 실패: ${e.message}
+    </div>` + renderStrategyCards(indicators.map(ev => ({
+      name: ev.name, time: ev.time, importance: ev.importance,
+      strategy: '관망', note: '데이터 로드 중 오류가 발생했습니다. 캘린더에서 실제 수치를 확인하세요.', assets: []
+    })));
+  }
+}
+
+function renderStrategyCards(cards) {
+  const impLabel = {high:'🔴 높음', medium:'🟡 중간', low:'🟢 낮음'};
+  return cards.map(card => {
+    const badgeClass = `scb-${card.strategy || '관망'}`;
+    const assetTags = (card.assets || []).map(a =>
+      `<span class="sc-asset-tag">${a}</span>`
+    ).join('');
+    return `<div class="strat-card">
+      <div class="sc-top">
+        <div class="sc-info">
+          <div class="sc-name">${card.name}</div>
+          <div class="sc-time">${card.time || ''} · ${impLabel[card.importance] || card.importance}</div>
+        </div>
+        <span class="sc-badge ${badgeClass}">${card.strategy || '관망'}</span>
+      </div>
+      ${card.note ? `<div class="sc-note">${card.note}</div>` : ''}
+      ${assetTags ? `<div class="sc-assets">${assetTags}</div>` : ''}
+    </div>`;
+  }).join('');
+}
+
+/* ══ COUNTRY FILTER LIST ══ */
+function renderCountryList(filter='') {
+  const list = document.getElementById('cl-list');
+  const visible = COUNTRIES.filter(c =>
+    !filter || c.name.includes(filter) || c.iso.toLowerCase().includes(filter.toLowerCase())
+  );
+  list.innerHTML = visible.map(c => `
+    <div class="ci ${activeCountries.has(c.iso)?'on':''}" onclick="toggleCountry('${c.iso}')">
+      <div class="ci-check">${activeCountries.has(c.iso)?'✓':''}</div>
+      <span class="ci-flag">${c.flag}</span>
+      <span class="ci-name">${c.name}</span>
+      <span class="ci-code">${c.iso}</span>
+    </div>
+  `).join('');
+
+  renderQuickPills();
+}
+
+function filterCountryList(v) { renderCountryList(v); }
+
+function renderQuickPills() {
+  const container = document.getElementById('quick-pills');
+  const top = COUNTRIES.slice(0,10);
+  container.innerHTML = `<span class="cf-label">국가</span>` +
+    top.map(c=>`<button class="cpill ${activeCountries.has(c.iso)?'on':''}" onclick="toggleCountry('${c.iso}')">${c.flag} ${c.name}</button>`).join('');
+}
+
+function toggleCountry(iso) {
+  if (activeCountries.has(iso)) activeCountries.delete(iso);
+  else activeCountries.add(iso);
+  renderCountryList(document.getElementById('cl-search').value);
+  colorMaps();
+  updateCalIframe();
+}
+
+function clearCountries() {
+  activeCountries.clear();
+  renderCountryList();
+  colorMaps();
+  updateCalIframe();
+}
+
+/* ══ UPDATE IFRAME based on selected countries ══ */
+function updateCalIframe() {
+  const ids = [...activeCountries]
+    .map(iso => CMAP[iso]?.invId)
+    .filter(Boolean)
+    .filter((v,i,a) => a.indexOf(v)===i);
+  if (ids.length === 0) return;
+
+  const period = document.querySelector('.cperiod-btn.on')?.dataset?.p || 'week';
+  const src = `https://sslecal2.investing.com?columns=exc_flags,exc_currency,exc_importance,exc_actual,exc_forecast,exc_previous&features=datepicker,timezone&countries=${ids.join(',')}&calType=${period}&timeZone=88&lang=18`;
+  document.getElementById('cal-iframe').src = src;
+}
+
+/* ══ CALENDAR PERIOD ══ */
+function setCalPeriod(p, btn) {
+  document.querySelectorAll('.cperiod-btn').forEach(b=>b.classList.remove('on'));
+  btn.classList.add('on');
+  btn.dataset.p = p;
+
+  const ids = [...activeCountries].map(iso=>CMAP[iso]?.invId).filter(Boolean).filter((v,i,a)=>a.indexOf(v)===i);
+  const countryParam = ids.length > 0 ? ids.join(',') : '110,11,37,35,4,17';
+  document.getElementById('cal-iframe').src =
+    `https://sslecal2.investing.com?columns=exc_flags,exc_currency,exc_importance,exc_actual,exc_forecast,exc_previous&features=datepicker,timezone&countries=${countryParam}&calType=${p}&timeZone=88&lang=18`;
+}
+
+/* ══ VIEW SWITCH ══ */
+function switchView(view, btn) {
+  currentView = view;
+  document.querySelectorAll('.vtab').forEach(b=>b.classList.remove('on'));
+  btn.classList.add('on');
+  document.querySelectorAll('.view-panel').forEach(p=>p.classList.remove('show'));
+  document.getElementById('view-'+view).classList.add('show');
+  if (view==='map' && !bigMapG) initBigMap();
+}
+
+/* ══ AI ANALYSIS (manual query) ══ */
+async function runAI() {
+  if (!apiKey) { alert('우측 상단에서 Gemini API 키를 먼저 입력하세요.'); return; }
+  const query = document.getElementById('ai-query').value.trim();
+  if (!query) { document.getElementById('ai-query').focus(); return; }
+
+  document.getElementById('rp-title').textContent = query;
+  document.getElementById('rp-title').classList.remove('ph');
+
+  const btn = document.getElementById('ai-btn');
+  btn.disabled = true; btn.classList.add('loading'); btn.textContent = '✨ 분석 중...';
+
+  const resultArea = document.getElementById('ai-result-area');
+  resultArea.innerHTML = `<div class="ai-result">
+    <div class="air-header">
+      <span class="air-icon">✨</span>
+      <span class="air-name streaming">Gemini AI 분석 중</span>
+      <span class="air-badge">AI</span>
+    </div>
+    <div id="stream-content" class="air-text streaming" style="min-height:60px;"></div>
+  </div>`;
+
+  try {
+    const prompt = `당신은 글로벌 매크로 경제 전문 애널리스트입니다. 다음 경제 지표 관련 질문에 한국어로 상세하게 분석해주세요.
+
+질문: ${query}
+현재 날짜: ${new Date().toLocaleDateString('ko-KR')}
+선택된 국가: ${[...activeCountries].map(iso=>CMAP[iso]?.name||iso).join(', ')}
+
+다음 구조로 분석해주세요:
+
+## 지표 개요
+(이 지표가 무엇인지, 왜 중요한지)
+
+## 수치 해석
+(발표된 수치의 의미, 예상 대비 서프라이즈/쇼크 여부)
+
+## 시장 영향
+(주식, 채권, 환율, 원자재 등 각 자산에 미치는 영향)
+
+## 투자 전략
+(단기/중기 관점에서 매수/매도/관망 전략 제안, 구체적인 섹터/자산군 언급)
+
+## 리스크
+(이 분석의 불확실성과 주의사항)`;
+
+    const resp = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        contents: [{ parts: [{ text: prompt }] }],
+        generationConfig: { maxOutputTokens: 2048, temperature: 0.7 }
+      })
+    });
+
+    if (!resp.ok) {
+      const err = await resp.json();
+      throw new Error(err.error?.message || `API 오류 ${resp.status}`);
+    }
+
+    const data = await resp.json();
+    const fullText = data.candidates?.[0]?.content?.parts?.[0]?.text || '응답을 받지 못했습니다.';
+
+    const contentEl = document.getElementById('stream-content');
+    const nameEl = document.querySelector('.air-name');
+    if (nameEl) { nameEl.textContent = 'Gemini 분석'; nameEl.classList.remove('streaming'); }
+
+    if (contentEl) {
+      contentEl.innerHTML = renderMarkdown(fullText);
+      contentEl.classList.remove('streaming');
+    }
+
+    const stratMatch = fullText.match(/(매수|매도|관망|중립)/);
+    const strat = stratMatch ? stratMatch[1] : null;
+    if (strat) {
+      const header = document.querySelector('.air-header');
+      if (header && !header.querySelector('.strat-badge')) {
+        const pill = document.createElement('span');
+        pill.className = `strat-badge sb-${strat}`;
+        pill.textContent = strat;
+        header.appendChild(pill);
+      }
+    }
+
+  } catch(err) {
+    document.getElementById('ai-result-area').innerHTML = `
+      <div class="ai-result" style="border-color:var(--a2);">
+        <div style="color:var(--a2);font-size:12px;font-weight:700;margin-bottom:6px;">❌ 오류 발생</div>
+        <div class="air-text">${err.message}</div>
+      </div>`;
+  } finally {
+    btn.disabled = false; btn.classList.remove('loading'); btn.textContent = '✨ Gemini AI 분석 실행';
+  }
+}
+
+function renderMarkdown(text) {
+  return text
+    .replace(/## (.+)/g, '<div style="font-size:10px;letter-spacing:2px;color:var(--dimmer);font-family:IBM Plex Mono,monospace;margin:12px 0 5px;text-transform:uppercase;">$1</div>')
+    .replace(/\*\*(.+?)\*\*/g, '<strong style="color:var(--accent)">$1</strong>')
+    .replace(/\n/g, '<br>');
+}
+
+/* ══ MAPS ══ */
+const NUM_ISO = {
+  840:'USA',156:'CHN',276:'DEU',392:'JPN',356:'IND',826:'GBR',250:'FRA',
+  76:'BRA',380:'ITA',124:'CAN',643:'RUS',410:'KOR',36:'AUS',484:'MEX',
+  724:'ESP',360:'IDN',528:'NLD',682:'SAU',792:'TUR',756:'CHE',32:'ARG',
+  616:'POL',56:'BEL',752:'SWE',578:'NOR',784:'ARE',566:'NGA',40:'AUT',
+  364:'IRN',710:'ZAF',818:'EGY',208:'DNK',458:'MYS',702:'SGP',704:'VNM',
+  586:'PAK',50:'BGD',608:'PHL',152:'CHL',170:'COL',246:'FIN',642:'ROU',
+  620:'PRT',203:'CZE',300:'GRC',554:'NZL',348:'HUN',604:'PER',398:'KAZ',
+};
+
+let worldData = null;
+let miniMapG, miniMapPath;
+
+async function loadWorldData() {
+  worldData = await d3.json('https://cdn.jsdelivr.net/npm/world-atlas@2/countries-110m.json');
+}
+
+async function initMiniMap() {
+  const el = document.getElementById('world-map');
+  const W = el.clientWidth||260, H = el.clientHeight||170;
+  const proj = d3.geoNaturalEarth1().scale(W/6.7).translate([W/2,H/2]);
+  miniMapPath = d3.geoPath().projection(proj);
+  const svg = d3.select('#world-map');
+  const zoom = d3.zoom().scaleExtent([1,5]).on('zoom',e=>miniMapG.attr('transform',e.transform));
+  svg.call(zoom);
+  miniMapG = svg.append('g');
+  miniMapG.append('path').datum({type:'Sphere'}).attr('fill','#040c18').attr('d',miniMapPath);
+  miniMapG.append('path').datum(d3.geoGraticule()()).attr('fill','none').attr('stroke','#0d2030').attr('stroke-width','.3').attr('d',miniMapPath);
+
+  if (!worldData) await loadWorldData();
+  drawMapCountries(miniMapG, miniMapPath, el, 'mtip', true);
+}
+
+async function initBigMap() {
+  const el = document.getElementById('big-map');
+  const W = el.clientWidth||700, H = el.clientHeight||400;
+  const proj = d3.geoNaturalEarth1().scale(W/6.3).translate([W/2,H/2]);
+  bigMapPath = d3.geoPath().projection(proj);
+  const svg = d3.select('#big-map');
+  const zoom = d3.zoom().scaleExtent([1,8]).on('zoom',e=>bigMapG.attr('transform',e.transform));
+  svg.call(zoom);
+  bigMapG = svg.append('g');
+  bigMapG.append('path').datum({type:'Sphere'}).attr('fill','#040c18').attr('d',bigMapPath);
+  bigMapG.append('path').datum(d3.geoGraticule()()).attr('fill','none').attr('stroke','#0d2030').attr('stroke-width','.3').attr('d',bigMapPath);
+
+  if (!worldData) await loadWorldData();
+  drawMapCountries(bigMapG, bigMapPath, el, 'bmtip', false);
+}
+
+function drawMapCountries(g, path, el, tipId, isMini) {
+  const countries = topojson.feature(worldData, worldData.objects.countries);
+  g.selectAll('.mc').data(countries.features).join('path')
+    .attr('class','mc')
+    .attr('d', path)
+    .each(function(d){ d.iso3 = NUM_ISO[d.id]||null; })
+    .attr('fill', d=>getCountryColor(d.iso3))
+    .on('mousemove', function(ev, d){
+      onCountryHover(ev, d, el, tipId);
+    })
+    .on('mouseleave', () => onCountryLeave(tipId))
+    .on('click', (ev, d) => {
+      if (d.iso3) {
+        toggleCountry(d.iso3);
+        // Also load investment strategy in right panel on map click
+        onCountryClick(d.iso3);
+      }
+    });
+}
+
+function getCountryColor(iso3) {
+  if(!iso3) return '#0c1825';
+  const inData = CMAP[iso3];
+  const isActive = activeCountries.has(iso3);
+  if(isActive && inData) return '#0066cc';
+  if(isActive) return '#003399';
+  if(inData) return '#1a2d40';
+  return '#0c1825';
+}
+
+function colorMaps() {
+  [miniMapG, bigMapG].forEach(g => {
+    if(!g) return;
+    g.selectAll('.mc')
+      .attr('fill', d=>getCountryColor(d.iso3))
+      .attr('stroke', d=>d.iso3&&activeCountries.has(d.iso3)?'var(--accent)':'#1a2d40')
+      .attr('stroke-width', d=>d.iso3&&activeCountries.has(d.iso3)?'1':'.4')
+      .classed('on', d=>!!d.iso3&&activeCountries.has(d.iso3));
+  });
+}
+
+/* ══ NOTIFICATION SYSTEM ══ */
+let notifyEnabled = false;
+let notifyCheckInterval = null;
+let lastNotifiedEvents = new Set();
+
+function requestNotifyPermission() {
+  if (!('Notification' in window)) {
+    alert('이 브라우저는 알림을 지원하지 않습니다.');
+    return;
+  }
+  Notification.requestPermission().then(perm => {
+    if (perm === 'granted') {
+      notifyEnabled = true;
+      updateNotifyBtn();
+      startNotifyCheck();
+    } else {
+      notifyEnabled = false;
+      updateNotifyBtn();
+    }
+  });
+}
+
+function toggleNotify() {
+  if (notifyEnabled) {
+    notifyEnabled = false;
+    if (notifyCheckInterval) clearInterval(notifyCheckInterval);
+    notifyCheckInterval = null;
+    updateNotifyBtn();
+  } else {
+    requestNotifyPermission();
+  }
+}
+
+function updateNotifyBtn() {
+  const btn = document.getElementById('notify-btn');
+  if (!btn) return;
+  if (notifyEnabled) {
+    btn.classList.add('on');
+    btn.innerHTML = '🔔 알림 ON';
+  } else {
+    btn.classList.remove('on');
+    btn.innerHTML = '🔕 알림 OFF';
+  }
+}
+
+function startNotifyCheck() {
+  if (notifyCheckInterval) clearInterval(notifyCheckInterval);
+  checkEconomicEvents();
+  notifyCheckInterval = setInterval(checkEconomicEvents, 5 * 60 * 1000);
+}
+
+async function checkEconomicEvents() {
+  if (!notifyEnabled || !apiKey) return;
+
+  const countryNames = [...activeCountries].map(iso => CMAP[iso]?.name || iso);
+  const today = new Date().toISOString().split('T')[0];
+
+  try {
+    const prompt = `오늘(${today}) 다음 국가들의 주요 경제지표 발표 일정을 알려주세요: ${countryNames.join(', ')}
+
+JSON 형식으로만 응답하세요 (다른 텍스트 없이):
+[{"country":"국가명","indicator":"지표명","time":"발표시간(KST)","importance":"high/medium/low","status":"발표완료/예정"}]
+
+최대 10개까지만 중요도 높은 순서로 알려주세요.`;
+
+    const resp = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        contents: [{ parts: [{ text: prompt }] }],
+        generationConfig: { maxOutputTokens: 1024, temperature: 0.2 }
+      })
+    });
+
+    if (!resp.ok) return;
+    const data = await resp.json();
+    const text = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
+
+    const jsonMatch = text.match(/\[[\s\S]*\]/);
+    if (!jsonMatch) return;
+
+    const events = JSON.parse(jsonMatch[0]);
+    events.forEach(ev => {
+      const eventKey = `${today}-${ev.country}-${ev.indicator}`;
+      if (!lastNotifiedEvents.has(eventKey)) {
+        lastNotifiedEvents.add(eventKey);
+        showNotification(ev);
+      }
+    });
+
+    updateNotifyPanel(events);
+  } catch(e) {
+    console.log('알림 체크 오류:', e);
+  }
+}
+
+function showNotification(ev) {
+  if (!notifyEnabled || Notification.permission !== 'granted') return;
+  const impEmoji = ev.importance === 'high' ? '🔴' : ev.importance === 'medium' ? '🟡' : '🟢';
+  const statusText = ev.status === '발표완료' ? '✅ 발표완료' : '⏰ 예정';
+  new Notification(`${impEmoji} ${ev.country} 경제지표`, {
+    body: `${ev.indicator}\n${ev.time} ${statusText}`,
+    icon: '🌐',
+    tag: `macro-${ev.country}-${ev.indicator}`,
+    requireInteraction: false
+  });
+}
+
+function updateNotifyPanel(events) {
+  const panel = document.getElementById('notify-panel');
+  if (!panel || !events || events.length === 0) return;
+  panel.innerHTML = events.slice(0, 6).map(ev => {
+    const impColor = ev.importance === 'high' ? 'var(--high)' : ev.importance === 'medium' ? 'var(--mid)' : 'var(--low)';
+    const statusIcon = ev.status === '발표완료' ? '✅' : '⏰';
+    return `<div style="display:flex;align-items:center;gap:6px;padding:5px 8px;background:var(--s3);border-radius:6px;border:1px solid var(--border);margin-bottom:4px;font-size:10px;">
+      <span style="color:${impColor};font-size:8px;">●</span>
+      <span style="color:var(--dim);min-width:32px;">${ev.country}</span>
+      <span style="color:var(--text);flex:1;">${ev.indicator}</span>
+      <span style="color:var(--dimmer);font-family:'IBM Plex Mono',monospace;font-size:9px;">${ev.time}</span>
+      <span>${statusIcon}</span>
+    </div>`;
+  }).join('');
+}
+
+/* ══ INIT ══ */
+(async () => {
+  await loadWorldData();
+  await initMiniMap();
+  renderCountryList();
+
+  if ('Notification' in window && Notification.permission === 'granted') {
+    notifyEnabled = true;
+    updateNotifyBtn();
+    startNotifyCheck();
+  }
+})();
+
+document.getElementById('ai-query')?.addEventListener('keydown', e=>{
+  if(e.key==='Enter') runAI();
+});
+</script>
+</body>
+</html>
