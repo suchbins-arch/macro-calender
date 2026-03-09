@@ -760,7 +760,7 @@ header {
         <div class="iframe-outer">
           <iframe
             id="cal-iframe"
-            src="https://sslecal2.investing.com?columns=exc_flags,exc_currency,exc_importance,exc_actual,exc_forecast,exc_previous&features=datepicker,timezone&countries=110,11,37,35,4,17&calType=week&timeZone=88&lang=18"
+            src="https://sslecal2.investing.com?columns=exc_flags,exc_currency,exc_importance,exc_actual,exc_forecast,exc_previous&features=datepicker,timezone&countries=5,11,37,35,4,17&calType=week&timeZone=88&lang=18"
             frameborder="0"
             allowtransparency="true"
             marginwidth="0"
@@ -962,12 +962,13 @@ setInterval(updateClock, 1000);
 
 /* ══ COUNTRIES DATA ══ */
 const COUNTRIES = [
-  {iso:'USA',name:'미국',flag:'🇺🇸',invId:110},
+  {iso:'USA',name:'미국',flag:'🇺🇸',invId:5},
   {iso:'KOR',name:'한국',flag:'🇰🇷',invId:11},
   {iso:'CHN',name:'중국',flag:'🇨🇳',invId:37},
   {iso:'JPN',name:'일본',flag:'🇯🇵',invId:35},
   {iso:'GBR',name:'영국',flag:'🇬🇧',invId:4},
   {iso:'DEU',name:'독일',flag:'🇩🇪',invId:17},
+  {iso:'TWN',name:'대만',flag:'🇹🇼',invId:41},
 ];
 const CMAP = {}; COUNTRIES.forEach(c=>CMAP[c.iso]=c);
 
@@ -1012,6 +1013,12 @@ const STATIC_WEEKLY = {
     {name:'소비자물가지수 (CPI)',   time:'15:00', importance:'high'},
     {name:'ZEW 경제심리지수',       time:'18:00', importance:'medium'},
     {name:'실업률',                 time:'14:55', importance:'medium'},
+  ],
+  TWN: [
+    {name:'수출 (YoY)',             time:'16:00', importance:'high'},
+    {name:'소비자물가지수 (CPI)',   time:'08:30', importance:'medium'},
+    {name:'산업생산 (YoY)',         time:'16:00', importance:'medium'},
+    {name:'무역수지',               time:'16:00', importance:'low'},
   ],
 };
 
@@ -1327,7 +1334,7 @@ function setCalPeriod(p, btn) {
   btn.dataset.p = p;
 
   const ids = [...activeCountries].map(iso=>CMAP[iso]?.invId).filter(Boolean).filter((v,i,a)=>a.indexOf(v)===i);
-  const countryParam = ids.length > 0 ? ids.join(',') : '110,11,37,35,4,17';
+  const countryParam = ids.length > 0 ? ids.join(',') : '5,11,37,35,4,17';
   document.getElementById('cal-iframe').src =
     `https://sslecal2.investing.com?columns=exc_flags,exc_currency,exc_importance,exc_actual,exc_forecast,exc_previous&features=datepicker,timezone&countries=${countryParam}&calType=${p}&timeZone=88&lang=18`;
 }
@@ -1445,6 +1452,7 @@ const NUM_ISO = {
   364:'IRN',710:'ZAF',818:'EGY',208:'DNK',458:'MYS',702:'SGP',704:'VNM',
   586:'PAK',50:'BGD',608:'PHL',152:'CHL',170:'COL',246:'FIN',642:'ROU',
   620:'PRT',203:'CZE',300:'GRC',554:'NZL',348:'HUN',604:'PER',398:'KAZ',
+  158:'TWN',
 };
 
 let worldData = null;
