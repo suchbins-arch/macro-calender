@@ -905,44 +905,46 @@ const COUNTRIES = [
 ];
 const CMAP = {}; COUNTRIES.forEach(c=>CMAP[c.iso]=c);
 
-/* ══ STATIC WEEKLY INDICATOR DATA (fallback when no API key) ══ */
+/* ══ STATIC WEEKLY INDICATOR DATA (fallback when no API key) ══
+   ※ 요일은 매달 달라지므로 지표명·중요도만 수록. 정확한 날짜/시간은 캘린더뷰(Investing.com) 참조.
+══ */
 const STATIC_WEEKLY = {
   USA: [
-    {name:'소비자물가지수 (CPI)', time:'화 09:30', importance:'high'},
-    {name:'연준 금리결정 (FOMC)', time:'수 03:00', importance:'high'},
-    {name:'신규실업수당청구건수', time:'목 09:30', importance:'medium'},
-    {name:'소매판매 (MoM)', time:'금 09:30', importance:'medium'},
-    {name:'미시간대 소비자심리', time:'금 22:00', importance:'low'},
+    {name:'소비자물가지수 (CPI)', importance:'high'},
+    {name:'연준 금리결정 (FOMC)', importance:'high'},
+    {name:'신규실업수당청구건수', importance:'medium'},
+    {name:'소매판매 (MoM)', importance:'medium'},
+    {name:'미시간대 소비자심리', importance:'low'},
   ],
   KOR: [
-    {name:'한국은행 기준금리 결정', time:'목 10:00', importance:'high'},
-    {name:'수출입 동향', time:'월 09:00', importance:'medium'},
-    {name:'소비자물가지수 (CPI)', time:'화 08:00', importance:'medium'},
-    {name:'경상수지', time:'수 08:00', importance:'low'},
+    {name:'한국은행 기준금리 결정', importance:'high'},
+    {name:'수출입 동향', importance:'medium'},
+    {name:'소비자물가지수 (CPI)', importance:'medium'},
+    {name:'경상수지', importance:'low'},
   ],
   CHN: [
-    {name:'소비자물가지수 (CPI)', time:'수 10:30', importance:'high'},
-    {name:'무역수지', time:'목 10:30', importance:'high'},
-    {name:'생산자물가지수 (PPI)', time:'수 10:30', importance:'medium'},
-    {name:'산업생산 (YoY)', time:'금 10:00', importance:'medium'},
+    {name:'소비자물가지수 (CPI)', importance:'high'},
+    {name:'무역수지', importance:'high'},
+    {name:'생산자물가지수 (PPI)', importance:'medium'},
+    {name:'산업생산 (YoY)', importance:'medium'},
   ],
   JPN: [
-    {name:'BOJ 통화정책 결정', time:'목 12:00', importance:'high'},
-    {name:'국내총생산 (GDP)', time:'화 08:50', importance:'high'},
-    {name:'소비자물가지수 (CPI)', time:'금 08:30', importance:'medium'},
-    {name:'무역수지', time:'수 08:50', importance:'low'},
+    {name:'BOJ 통화정책 결정', importance:'high'},
+    {name:'국내총생산 (GDP)', importance:'high'},
+    {name:'소비자물가지수 (CPI)', importance:'medium'},
+    {name:'무역수지', importance:'low'},
   ],
   GBR: [
-    {name:'영란은행 금리결정 (BOE)', time:'목 21:00', importance:'high'},
-    {name:'소비자물가지수 (CPI)', time:'수 17:00', importance:'high'},
-    {name:'고용지표 (실업률)', time:'화 17:00', importance:'medium'},
-    {name:'소매판매 (MoM)', time:'금 17:00', importance:'medium'},
+    {name:'영란은행 금리결정 (BOE)', importance:'high'},
+    {name:'소비자물가지수 (CPI)', importance:'high'},
+    {name:'고용지표 (실업률)', importance:'medium'},
+    {name:'소매판매 (MoM)', importance:'medium'},
   ],
   DEU: [
-    {name:'IFO 기업환경지수', time:'월 17:00', importance:'high'},
-    {name:'소비자물가지수 (CPI)', time:'수 15:00', importance:'high'},
-    {name:'ZEW 경제심리지수', time:'화 18:00', importance:'medium'},
-    {name:'실업률', time:'목 14:55', importance:'medium'},
+    {name:'IFO 기업환경지수', importance:'high'},
+    {name:'소비자물가지수 (CPI)', importance:'high'},
+    {name:'ZEW 경제심리지수', importance:'medium'},
+    {name:'실업률', importance:'medium'},
   ],
 };
 
@@ -950,17 +952,19 @@ const STATIC_WEEKLY = {
 let weeklyIndicatorsCache = {};  // iso3 → {data, ts}
 const CACHE_TTL = 30 * 60 * 1000;  // 30 minutes
 
+// Returns {items, isStatic} — isStatic=true means time fields are absent (no day info)
 async function fetchWeeklyIndicators(iso3) {
   const now = Date.now();
   if (weeklyIndicatorsCache[iso3] && (now - weeklyIndicatorsCache[iso3].ts) < CACHE_TTL) {
-    return weeklyIndicatorsCache[iso3].data;
+    return weeklyIndicatorsCache[iso3].result;
   }
 
-  // Without API key, use static data
+  // Without API key, use static data (no day/time info)
   if (!apiKey) {
-    const data = STATIC_WEEKLY[iso3] || null;
-    if (data) weeklyIndicatorsCache[iso3] = {data, ts: now};
-    return data;
+    const items = STATIC_WEEKLY[iso3] || null;
+    const result = items ? {items, isStatic: true} : null;
+    if (result) weeklyIndicatorsCache[iso3] = {result, ts: now};
+    return result;
   }
 
   const country = CMAP[iso3];
@@ -994,14 +998,16 @@ JSON 배열 형식으로만 응답 (다른 텍스트 없이):
     const jsonMatch = text.match(/\[[\s\S]*?\]/);
     if (!jsonMatch) throw new Error('No JSON');
 
-    const data = JSON.parse(jsonMatch[0]);
-    weeklyIndicatorsCache[iso3] = {data, ts: now};
-    return data;
+    const items = JSON.parse(jsonMatch[0]);
+    const result = {items, isStatic: false};
+    weeklyIndicatorsCache[iso3] = {result, ts: now};
+    return result;
   } catch(e) {
-    // Fallback to static
-    const data = STATIC_WEEKLY[iso3] || null;
-    if (data) weeklyIndicatorsCache[iso3] = {data, ts: now};
-    return data;
+    // Fallback to static (no time info)
+    const items = STATIC_WEEKLY[iso3] || null;
+    const result = items ? {items, isStatic: true} : null;
+    if (result) weeklyIndicatorsCache[iso3] = {result, ts: now};
+    return result;
   }
 }
 
@@ -1035,21 +1041,30 @@ function onCountryHover(ev, d, el, tipId) {
   if (hoverDebounceTimer) clearTimeout(hoverDebounceTimer);
   hoverDebounceTimer = setTimeout(async () => {
     if (currentHoverIso !== d.iso3) return;
-    const indicators = await fetchWeeklyIndicators(d.iso3);
+    const result = await fetchWeeklyIndicators(d.iso3);
     if (currentHoverIso !== d.iso3) return;  // May have moved away
 
     let evHtml = '';
-    if (indicators && indicators.length > 0) {
-      evHtml = '<div class="mt-events">' + indicators.slice(0,4).map(ev => {
+    if (result && result.items && result.items.length > 0) {
+      evHtml = '<div class="mt-events">' + result.items.slice(0,4).map(ev => {
         const dot = ev.importance === 'high' ? '<span style="color:var(--high)">●</span>'
                   : ev.importance === 'medium' ? '<span style="color:var(--mid)">●</span>'
                   : '<span style="color:var(--low)">●</span>';
+        // Only show time if it exists (API data); static data has no time field
+        const timeStr = ev.time ? `<span class="mt-ev-time">(${ev.time})</span>` : '';
         return `<div class="mt-ev">
           <span class="mt-ev-dot">${dot}</span>
           <span class="mt-ev-name">${ev.name}</span>
-          <span class="mt-ev-time">(${ev.time})</span>
+          ${timeStr}
         </div>`;
       }).join('') + '</div>';
+
+      // Show disclaimer only for static data (no day/time accuracy guarantee)
+      if (result.isStatic) {
+        evHtml += `<div style="margin-top:5px;padding:4px 6px;background:rgba(255,170,0,.07);border:1px solid rgba(255,170,0,.2);border-radius:5px;font-size:8px;color:var(--mid);line-height:1.5;">
+          ⚠️ 정확한 날짜·시간은 캘린더뷰(Investing.com) 참조<br>API 키 입력 시 실시간 일정 조회 가능
+        </div>`;
+      }
     } else {
       evHtml = '<div class="mt-loading" style="margin-top:4px;">이번주 주요 일정 없음</div>';
     }
@@ -1082,16 +1097,21 @@ async function onCountryClick(iso3) {
   </div>`;
 
   // Fetch indicators
-  const indicators = await fetchWeeklyIndicators(iso3);
+  const fetched = await fetchWeeklyIndicators(iso3);
 
-  if (!indicators || indicators.length === 0) {
+  if (!fetched || !fetched.items || fetched.items.length === 0) {
     resultArea.innerHTML = `<div style="text-align:center;padding:20px;color:var(--dimmer);font-size:11px;">이번주 주요 경제지표 일정을 찾지 못했습니다.</div>`;
     return;
   }
 
-  // If no API key, show indicator list + guidance
+  const {items: indicators, isStatic} = fetched;
+
+  // If no API key, show indicator list (no time info) + guidance
   if (!apiKey) {
-    resultArea.innerHTML = `
+    const staticNote = `<div style="background:rgba(255,170,0,.06);border:1px solid rgba(255,170,0,.2);border-radius:7px;padding:9px 11px;font-size:10px;color:var(--mid);line-height:1.7;margin-bottom:10px;">
+      ⚠️ 지표명·중요도만 표시됩니다.<br>정확한 발표 날짜/시간은 <strong>캘린더뷰(Investing.com)</strong>에서 확인하세요.
+    </div>`;
+    resultArea.innerHTML = staticNote + `
       <div style="margin-bottom:10px;">
         <div class="rp-section-head"><span class="rp-section-label">이번주 주요 지표</span><div class="rp-section-line"></div></div>
         ${indicators.map(ev => {
@@ -1100,7 +1120,6 @@ async function onCountryClick(iso3) {
             <span style="color:${impColor};font-size:10px;">●</span>
             <div style="flex:1;">
               <div style="font-size:11px;color:var(--text);">${ev.name}</div>
-              <div style="font-size:9px;color:var(--dimmer);font-family:'IBM Plex Mono',monospace;">${ev.time}</div>
             </div>
           </div>`;
         }).join('')}
@@ -1117,7 +1136,7 @@ async function onCountryClick(iso3) {
 }
 
 async function fetchInvestmentStrategy(iso3, countryName, indicators) {
-  const indicatorList = indicators.map((ev,i)=>`${i+1}. ${ev.name} (${ev.time}, 중요도:${ev.importance})`).join('\n');
+  const indicatorList = indicators.map((ev,i)=>`${i+1}. ${ev.name}${ev.time ? ' ('+ev.time+')' : ''} 중요도:${ev.importance}`).join('\n');
 
   try {
     const prompt = `당신은 글로벌 매크로 투자 전문가입니다. 이번주 ${countryName}의 경제지표 발표를 바탕으로 투자전략을 분석해주세요.
