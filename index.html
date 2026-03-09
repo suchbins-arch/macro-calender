@@ -1295,6 +1295,9 @@ function toggleCountry(iso) {
   renderCountryList(document.getElementById('cl-search').value);
   colorMaps();
   updateCalIframe();
+  // 국가 변경 → 알림 패널 즉시 갱신
+  showStaticNotifyPanel();
+  if (notifyEnabled && apiKey) checkEconomicEvents();
 }
 
 function clearCountries() {
@@ -1528,22 +1531,21 @@ function colorMaps() {
 let notifyEnabled = false;
 let notifyCheckInterval = null;
 let lastNotifiedEvents = new Set();
+let scheduledNotifyTimers = [];   // 발표 시각 기반 정확 타이머
 
-function requestNotifyPermission() {
-  if (!('Notification' in window)) {
-    alert('이 브라우저는 알림을 지원하지 않습니다.');
-    return;
+/* 로드 시 자동으로 권한 요청 → 기본 ON */
+async function initNotifications() {
+  if (!('Notification' in window)) return;
+  if (Notification.permission === 'granted') {
+    notifyEnabled = true;
+  } else if (Notification.permission !== 'denied') {
+    const perm = await Notification.requestPermission();
+    notifyEnabled = (perm === 'granted');
   }
-  Notification.requestPermission().then(perm => {
-    if (perm === 'granted') {
-      notifyEnabled = true;
-      updateNotifyBtn();
-      startNotifyCheck();
-    } else {
-      notifyEnabled = false;
-      updateNotifyBtn();
-    }
-  });
+  updateNotifyBtn();
+  // 권한 여부 무관하게 패널에 오늘/이번주 일정 표시
+  showStaticNotifyPanel();
+  if (notifyEnabled) startNotifyCheck();
 }
 
 function toggleNotify() {
@@ -1551,9 +1553,20 @@ function toggleNotify() {
     notifyEnabled = false;
     if (notifyCheckInterval) clearInterval(notifyCheckInterval);
     notifyCheckInterval = null;
+    scheduledNotifyTimers.forEach(clearTimeout);
+    scheduledNotifyTimers = [];
     updateNotifyBtn();
   } else {
-    requestNotifyPermission();
+    if (!('Notification' in window)) { alert('이 브라우저는 알림을 지원하지 않습니다.'); return; }
+    Notification.requestPermission().then(perm => {
+      if (perm === 'granted') {
+        notifyEnabled = true;
+        updateNotifyBtn();
+        startNotifyCheck();
+      } else {
+        alert('브라우저 알림 권한이 차단되어 있습니다.\n주소창 왼쪽 자물쇠 아이콘에서 권한을 허용해 주세요.');
+      }
+    });
   }
 }
 
@@ -1575,35 +1588,62 @@ function startNotifyCheck() {
   notifyCheckInterval = setInterval(checkEconomicEvents, 5 * 60 * 1000);
 }
 
+/* 선택된 국가의 이번주 정적 일정을 패널에 즉시 표시 (API 불필요) */
+function showStaticNotifyPanel() {
+  const all = [];
+  [...activeCountries].forEach(iso => {
+    const c = CMAP[iso];
+    const items = STATIC_WEEKLY[iso];
+    if (c && items) items.forEach(ev => all.push({
+      country: c.name, flag: c.flag,
+      indicator: ev.name, time: ev.time,
+      importance: ev.importance, status: '이번주 예정'
+    }));
+  });
+  all.sort((a, b) => (a.time || '').localeCompare(b.time || ''));
+  updateNotifyPanel(all.length ? all : null);
+}
+
 async function checkEconomicEvents() {
-  if (!notifyEnabled || !apiKey) return;
+  if (!notifyEnabled) return;
+
+  // API 없으면 정적 패널만 유지
+  if (!apiKey) { showStaticNotifyPanel(); return; }
 
   const countryNames = [...activeCountries].map(iso => CMAP[iso]?.name || iso);
-  const today = new Date().toISOString().split('T')[0];
+  const kstNow = new Date(new Date().toLocaleString('en-US', {timeZone: 'Asia/Seoul'}));
+  const today = `${kstNow.getFullYear()}-${String(kstNow.getMonth()+1).padStart(2,'0')}-${String(kstNow.getDate()).padStart(2,'0')}`;
 
   try {
-    const prompt = `오늘(${today}) 다음 국가들의 주요 경제지표 발표 일정을 알려주세요: ${countryNames.join(', ')}
+    const prompt = `오늘(${today}, KST 기준) 다음 국가들의 주요 경제지표 발표 일정을 알려주세요: ${countryNames.join(', ')}
 
 JSON 형식으로만 응답하세요 (다른 텍스트 없이):
-[{"country":"국가명","indicator":"지표명","time":"발표시간(KST)","importance":"high/medium/low","status":"발표완료/예정"}]
+[{"country":"국가명","flag":"국기이모지","indicator":"지표명","time":"HH:MM","importance":"high/medium/low","status":"발표완료/예정"}]
 
-최대 10개까지만 중요도 높은 순서로 알려주세요.`;
+오늘 발표 일정이 있는 것만, 중요도 높은 순으로 최대 10개.
+오늘 일정이 없으면 빈 배열 [].`;
 
     const data = await geminiCall({
       contents: [{ parts: [{ text: prompt }] }],
-      generationConfig: { maxOutputTokens: 1024, temperature: 0.2 }
+      generationConfig: { maxOutputTokens: 1024, temperature: 0.1 }
     }).catch(() => null);
-    if (!data) return;
-    const text = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
+    if (!data) { showStaticNotifyPanel(); return; }
 
+    const text = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
     const jsonMatch = text.match(/\[[\s\S]*\]/);
-    if (!jsonMatch) return;
+    if (!jsonMatch) { showStaticNotifyPanel(); return; }
 
     const events = JSON.parse(jsonMatch[0]);
-    events.forEach(ev => {
-      const eventKey = `${today}-${ev.country}-${ev.indicator}`;
-      if (!lastNotifiedEvents.has(eventKey)) {
-        lastNotifiedEvents.add(eventKey);
+    if (!events.length) { showStaticNotifyPanel(); return; }
+
+    // 예정 이벤트: 정확한 발표 시각에 타이머 등록
+    scheduleEventNotifications(events, today);
+
+    // 이미 발표완료된 이벤트: 아직 알림 보내지 않은 것만 발송
+    events.filter(ev => ev.status === '발표완료').forEach(ev => {
+      const key = `${today}-${ev.country}-${ev.indicator}`;
+      if (!lastNotifiedEvents.has(key)) {
+        lastNotifiedEvents.add(key);
         showNotification(ev);
       }
     });
@@ -1611,33 +1651,70 @@ JSON 형식으로만 응답하세요 (다른 텍스트 없이):
     updateNotifyPanel(events);
   } catch(e) {
     console.log('알림 체크 오류:', e);
+    showStaticNotifyPanel();
   }
+}
+
+/* 발표 예정 이벤트를 정확한 KST 시각에 맞춰 setTimeout 등록 */
+function scheduleEventNotifications(events, todayStr) {
+  scheduledNotifyTimers.forEach(clearTimeout);
+  scheduledNotifyTimers = [];
+
+  const kstNow = new Date(new Date().toLocaleString('en-US', {timeZone: 'Asia/Seoul'}));
+
+  events.filter(ev => ev.status !== '발표완료').forEach(ev => {
+    if (!ev.time) return;
+    const m = ev.time.match(/(\d{1,2}):(\d{2})/);
+    if (!m) return;
+
+    const target = new Date(new Date().toLocaleString('en-US', {timeZone: 'Asia/Seoul'}));
+    target.setHours(parseInt(m[1]), parseInt(m[2]), 0, 0);
+    const msUntil = target - kstNow;
+
+    if (msUntil > 0 && msUntil <= 24 * 60 * 60 * 1000) {
+      const key = `${todayStr}-${ev.country}-${ev.indicator}`;
+      const t = setTimeout(() => {
+        if (!lastNotifiedEvents.has(key) && notifyEnabled) {
+          lastNotifiedEvents.add(key);
+          showNotification({...ev, status: '발표완료'});
+          // 발표 후 2분 뒤 패널 갱신
+          setTimeout(checkEconomicEvents, 2 * 60 * 1000);
+        }
+      }, msUntil);
+      scheduledNotifyTimers.push(t);
+    }
+  });
 }
 
 function showNotification(ev) {
   if (!notifyEnabled || Notification.permission !== 'granted') return;
   const impEmoji = ev.importance === 'high' ? '🔴' : ev.importance === 'medium' ? '🟡' : '🟢';
-  const statusText = ev.status === '발표완료' ? '✅ 발표완료' : '⏰ 예정';
-  new Notification(`${impEmoji} ${ev.country} 경제지표`, {
-    body: `${ev.indicator}\n${ev.time} ${statusText}`,
-    icon: '🌐',
+  const flag = ev.flag || '';
+  new Notification(`${impEmoji} ${flag} ${ev.country} 경제지표 발표`, {
+    body: `${ev.indicator}\n⏰ ${ev.time} KST`,
     tag: `macro-${ev.country}-${ev.indicator}`,
-    requireInteraction: false
+    requireInteraction: false,
+    silent: false
   });
 }
 
 function updateNotifyPanel(events) {
   const panel = document.getElementById('notify-panel');
-  if (!panel || !events || events.length === 0) return;
-  panel.innerHTML = events.slice(0, 6).map(ev => {
+  if (!panel) return;
+  if (!events || events.length === 0) {
+    panel.innerHTML = `<div style="font-size:10px;color:var(--dimmer);padding:8px;text-align:center;">오늘 선택 국가의 발표 일정이 없습니다</div>`;
+    return;
+  }
+  panel.innerHTML = events.slice(0, 8).map(ev => {
     const impColor = ev.importance === 'high' ? 'var(--high)' : ev.importance === 'medium' ? 'var(--mid)' : 'var(--low)';
     const statusIcon = ev.status === '발표완료' ? '✅' : '⏰';
+    const flag = ev.flag || '';
     return `<div style="display:flex;align-items:center;gap:6px;padding:5px 8px;background:var(--s3);border-radius:6px;border:1px solid var(--border);margin-bottom:4px;font-size:10px;">
-      <span style="color:${impColor};font-size:8px;">●</span>
-      <span style="color:var(--dim);min-width:32px;">${ev.country}</span>
-      <span style="color:var(--text);flex:1;">${ev.indicator}</span>
-      <span style="color:var(--dimmer);font-family:'IBM Plex Mono',monospace;font-size:9px;">${ev.time}</span>
-      <span>${statusIcon}</span>
+      <span style="color:${impColor};font-size:8px;flex-shrink:0;">●</span>
+      <span style="font-size:11px;flex-shrink:0;">${flag}</span>
+      <span style="color:var(--text);flex:1;line-height:1.3;">${ev.indicator}</span>
+      <span style="color:var(--dimmer);font-family:'IBM Plex Mono',monospace;font-size:9px;flex-shrink:0;">${ev.time||''}</span>
+      <span style="flex-shrink:0;">${statusIcon}</span>
     </div>`;
   }).join('');
 }
@@ -1647,12 +1724,7 @@ function updateNotifyPanel(events) {
   await loadWorldData();
   await initMiniMap();
   renderCountryList();
-
-  if ('Notification' in window && Notification.permission === 'granted') {
-    notifyEnabled = true;
-    updateNotifyBtn();
-    startNotifyCheck();
-  }
+  await initNotifications();
 })();
 
 document.getElementById('ai-query')?.addEventListener('keydown', e=>{
