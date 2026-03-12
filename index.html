@@ -680,6 +680,86 @@ header {
 
 /* Notify panel */
 .notify-panel-wrap { margin-bottom: 12px; }
+
+/* Gemini Guide Panel */
+.gemini-guide {
+  background: linear-gradient(135deg, rgba(0,229,255,.05), rgba(0,100,200,.08));
+  border: 1px solid rgba(0,229,255,.2);
+  border-radius: 10px;
+  padding: 12px 14px;
+  margin-bottom: 14px;
+}
+.gg-title {
+  font-size: 9px;
+  letter-spacing: 2px;
+  color: var(--accent);
+  font-family: 'IBM Plex Mono', monospace;
+  margin-bottom: 9px;
+}
+.gg-steps { display: flex; flex-direction: column; gap: 5px; }
+.gg-step {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 10px;
+  color: var(--dim);
+}
+.gg-num {
+  width: 16px; height: 16px;
+  background: rgba(0,229,255,.15);
+  border: 1px solid rgba(0,229,255,.3);
+  border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 9px; color: var(--accent);
+  font-family: 'IBM Plex Mono', monospace;
+  flex-shrink: 0;
+}
+
+/* Gemini open button inside result panel */
+.gemini-open-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  width: 100%;
+  padding: 9px;
+  margin-top: 10px;
+  background: linear-gradient(135deg, #1a3a8a, #0066bb);
+  border: none;
+  border-radius: 8px;
+  color: #fff;
+  font-size: 11px;
+  font-weight: 600;
+  cursor: pointer;
+  font-family: 'Noto Sans KR', sans-serif;
+  transition: all .2s;
+}
+.gemini-open-btn:hover { background: linear-gradient(135deg, #2255bb, #0088ee); transform: translateY(-1px); }
+.gemini-open-btn:active { transform: translateY(0); }
+
+/* Copy feedback toast */
+.copy-toast {
+  position: fixed;
+  bottom: 24px;
+  left: 50%;
+  transform: translateX(-50%) translateY(10px);
+  background: rgba(0,229,255,.15);
+  border: 1px solid var(--accent);
+  color: var(--accent);
+  border-radius: 20px;
+  padding: 8px 20px;
+  font-size: 11px;
+  font-weight: 600;
+  pointer-events: none;
+  opacity: 0;
+  transition: all .3s;
+  z-index: 9999;
+  white-space: nowrap;
+}
+.copy-toast.show {
+  opacity: 1;
+  transform: translateX(-50%) translateY(0);
+}
 </style>
 </head>
 <body>
@@ -793,24 +873,24 @@ header {
     </div>
 
     <div class="ai-section">
-      <!-- API Key setup -->
-      <div class="api-setup">
-        <div class="api-setup-title">GEMINI API KEY</div>
-        <div class="api-row">
-          <input class="api-input" id="api-key" type="password" placeholder="AIzaSy..." autocomplete="off">
-          <button class="api-save" onclick="saveKey()">저장</button>
+      <!-- Gemini 안내 패널 -->
+      <div class="gemini-guide">
+        <div class="gg-title">✨ GEMINI AI 분석 방법</div>
+        <div class="gg-steps">
+          <div class="gg-step"><span class="gg-num">1</span>아래 입력창에 분석할 지표 입력</div>
+          <div class="gg-step"><span class="gg-num">2</span>버튼 클릭 → 프롬프트 자동 복사</div>
+          <div class="gg-step"><span class="gg-num">3</span>Gemini 창에 붙여넣기(Ctrl+V)</div>
         </div>
-        <div class="api-status" id="api-status"></div>
       </div>
 
       <!-- 알림 패널 -->
       <div class="notify-panel-wrap">
         <div class="rp-section-head">
-          <span class="rp-section-label">📋 오늘의 경제지표</span>
+          <span class="rp-section-label">📋 이번주 경제지표</span>
           <div class="rp-section-line"></div>
         </div>
         <div id="notify-panel">
-          <div style="font-size:10px;color:var(--dimmer);padding:8px;text-align:center;">알림을 활성화하면 오늘의 지표가 표시됩니다</div>
+          <div style="font-size:10px;color:var(--dimmer);padding:8px;text-align:center;">국가를 선택하면 이번주 일정이 표시됩니다</div>
         </div>
       </div>
 
@@ -821,17 +901,17 @@ header {
           <div class="rp-section-line"></div>
         </div>
         <input class="ai-search-input" id="ai-query" placeholder="예: 미국 CPI 3.2% 발표 — 시장 영향 분석해줘" onkeydown="if(event.key==='Enter')runAI()">
-        <button class="ai-btn" id="ai-btn" onclick="runAI()">✨ Gemini AI 분석 실행</button>
+        <button class="ai-btn" id="ai-btn" onclick="runAI()">✨ Gemini에서 분석하기 (프롬프트 복사)</button>
       </div>
 
       <!-- AI Result area -->
       <div id="ai-result-area">
-        <div style="text-align:center;padding:30px 16px;color:var(--dimmer);">
-          <div style="font-size:36px;opacity:.2;margin-bottom:10px;">🤖</div>
+        <div style="text-align:center;padding:24px 16px;color:var(--dimmer);">
+          <div style="font-size:32px;opacity:.2;margin-bottom:10px;">🤖</div>
           <div style="font-size:11px;line-height:1.8;">
-            좌측 캘린더에서 발표된 수치를 확인 후<br>
-            분석하고 싶은 지표를 위 검색창에 입력하거나<br>
-            지도뷰에서 국가를 클릭하세요
+            좌측 캘린더에서 발표 수치 확인 후<br>
+            분석할 지표를 위 입력창에 입력하세요<br>
+            <span style="color:var(--dimmer);font-size:10px;">지도뷰에서 국가 클릭 → 지표별 Gemini 분석</span>
           </div>
         </div>
       </div>
@@ -841,77 +921,10 @@ header {
 
 <script>
 /* ══ STATE ══ */
-let apiKey = localStorage.getItem('macro_gemini_key') || '';
 let activeCountries = new Set(['USA','KOR','CHN','JPN','GBR','DEU']);
 let currentView = 'calendar';
 let bigMapG, bigMapPath;
 let bwMode = false;
-
-/* ══ GEMINI RATE LIMITER (무료 플랜: 15 req/min) ══ */
-const RATE_LIMIT_RPM = 15;
-const RATE_WINDOW_MS = 60_000;
-let rateCallTimestamps = [];   // 최근 1분간 호출 시각 기록
-let rateQueue = [];            // 대기 중인 요청 {fn, resolve, reject}
-let rateProcessing = false;
-
-function _pruneTimestamps() {
-  const cutoff = Date.now() - RATE_WINDOW_MS;
-  rateCallTimestamps = rateCallTimestamps.filter(t => t > cutoff);
-}
-
-async function _processQueue() {
-  if (rateProcessing) return;
-  rateProcessing = true;
-  while (rateQueue.length > 0) {
-    _pruneTimestamps();
-    if (rateCallTimestamps.length < RATE_LIMIT_RPM) {
-      const {fn, resolve, reject} = rateQueue.shift();
-      rateCallTimestamps.push(Date.now());
-      try { resolve(await fn()); } catch(e) { reject(e); }
-    } else {
-      // 가장 오래된 호출이 만료될 때까지 대기
-      const waitMs = RATE_WINDOW_MS - (Date.now() - rateCallTimestamps[0]) + 200;
-      await new Promise(r => setTimeout(r, Math.max(waitMs, 500)));
-      _pruneTimestamps();
-    }
-  }
-  rateProcessing = false;
-}
-
-/**
- * Gemini API를 호출합니다. 무료 플랜 분당 15회 제한을 자동으로 지킵니다.
- * 429 응답 시 대기 후 1회 재시도합니다.
- */
-async function geminiCall(body, onWait) {
-  const fn = async () => {
-    const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
-    let resp = await fetch(url, {
-      method: 'POST',
-      headers: {'Content-Type': 'application/json'},
-      body: JSON.stringify(body)
-    });
-    if (resp.status === 429) {
-      // 한 번만 재시도: 10초 대기
-      if (onWait) onWait('⏳ API 한도 도달 — 10초 후 재시도...');
-      await new Promise(r => setTimeout(r, 10_000));
-      rateCallTimestamps.push(Date.now());  // 재시도도 카운트
-      resp = await fetch(url, {
-        method: 'POST',
-        headers: {'Content-Type': 'application/json'},
-        body: JSON.stringify(body)
-      });
-    }
-    if (!resp.ok) {
-      const err = await resp.json().catch(()=>({}));
-      throw new Error(err.error?.message || `API 오류 ${resp.status}`);
-    }
-    return resp.json();
-  };
-  return new Promise((resolve, reject) => {
-    rateQueue.push({fn, resolve, reject});
-    _processQueue();
-  });
-}
 
 /* ══ B&W MODE ══ */
 function toggleBW() {
@@ -926,26 +939,6 @@ function toggleBW() {
     btn.classList.remove('on');
     btn.textContent = '⬛ 흑백';
   }
-}
-
-/* ══ API KEY ══ */
-if (apiKey) {
-  document.getElementById('api-key').value = apiKey;
-  document.getElementById('api-status').textContent = '✓ 저장된 키 로드됨';
-  document.getElementById('api-status').className = 'api-status ok';
-}
-
-function saveKey() {
-  apiKey = document.getElementById('api-key').value.trim();
-  if (!apiKey) { showApiStatus('키를 입력하세요','err'); return; }
-  localStorage.setItem('macro_gemini_key', apiKey);
-  // Clear caches when key changes
-  weeklyIndicatorsCache = {};
-  showApiStatus('✓ 저장 완료','ok');
-}
-function showApiStatus(msg, cls) {
-  const el = document.getElementById('api-status');
-  el.textContent = msg; el.className = 'api-status ' + cls;
 }
 
 /* ══ CLOCK ══ */
@@ -1022,66 +1015,16 @@ const STATIC_WEEKLY = {
   ],
 };
 
-/* ══ WEEKLY INDICATORS CACHE ══ */
-let weeklyIndicatorsCache = {};  // iso3 → {data, ts}
-const CACHE_TTL = 30 * 60 * 1000;  // 30 minutes
-
-// Returns {items, isStatic} — isStatic=true means time fields are absent (no day info)
-async function fetchWeeklyIndicators(iso3) {
-  const now = Date.now();
-  if (weeklyIndicatorsCache[iso3] && (now - weeklyIndicatorsCache[iso3].ts) < CACHE_TTL) {
-    return weeklyIndicatorsCache[iso3].result;
-  }
-
-  // Without API key, use static data (no day/time info)
-  if (!apiKey) {
-    const items = STATIC_WEEKLY[iso3] || null;
-    const result = items ? {items, isStatic: true} : null;
-    if (result) weeklyIndicatorsCache[iso3] = {result, ts: now};
-    return result;
-  }
-
-  const country = CMAP[iso3];
-  if (!country) return null;
-
-  const today = new Date();
-  const weekStart = new Date(today); weekStart.setDate(today.getDate() - today.getDay() + 1);
-  const weekEnd = new Date(weekStart); weekEnd.setDate(weekStart.getDate() + 6);
-  const fmt = d => d.toLocaleDateString('ko-KR',{month:'numeric',day:'numeric'});
-
-  try {
-    const prompt = `${country.name}(${iso3})의 이번주(${fmt(weekStart)}~${fmt(weekEnd)}) 주요 경제지표 발표 일정을 알려주세요.
-
-JSON 배열 형식으로만 응답 (다른 텍스트 없이):
-[{"name":"지표명","time":"요일 HH:MM(KST)","importance":"high|medium|low"}]
-
-최대 5개, 중요도 높은 순으로.`;
-
-    const d = await geminiCall({
-      contents: [{ parts: [{ text: prompt }] }],
-      generationConfig: { maxOutputTokens: 512, temperature: 0.1 }
-    });
-    const text = d.candidates?.[0]?.content?.parts?.[0]?.text || '';
-    const jsonMatch = text.match(/\[[\s\S]*?\]/);
-    if (!jsonMatch) throw new Error('No JSON');
-
-    const items = JSON.parse(jsonMatch[0]);
-    const result = {items, isStatic: false};
-    weeklyIndicatorsCache[iso3] = {result, ts: now};
-    return result;
-  } catch(e) {
-    // Fallback to static (no time info)
-    const items = STATIC_WEEKLY[iso3] || null;
-    const result = items ? {items, isStatic: true} : null;
-    if (result) weeklyIndicatorsCache[iso3] = {result, ts: now};
-    return result;
-  }
+/* ══ WEEKLY INDICATORS (정적 데이터만 사용) ══ */
+// Returns {items, isStatic:true} — no API call needed
+function getWeeklyIndicators(iso3) {
+  const items = STATIC_WEEKLY[iso3] || null;
+  return items ? {items, isStatic: true} : null;
 }
 
 /* ══ MAP HOVER DEBOUNCE ══ */
 let hoverDebounceTimer = null;
 let currentHoverIso = null;
-let tooltipPending = {};  // iso → loading state
 
 function onCountryHover(ev, d, el, tipId) {
   const tt = document.getElementById(tipId);
@@ -1098,40 +1041,30 @@ function onCountryHover(ev, d, el, tipId) {
   if (y < 0) y = 8;
   tt.style.left = x + 'px'; tt.style.top = y + 'px';
 
-  // Show immediately with basic info
-  tt.innerHTML = `<div class="mt-cn">${countryLabel}</div><div class="mt-info">${selectedLabel}</div><div class="mt-loading">이번주 지표 로딩 중...</div>`;
-  tt.classList.add('show');
-
   currentHoverIso = d.iso3;
 
-  // Debounce 250ms before fetching
+  // 정적 데이터는 즉시 표시 (디바운스 불필요)
   if (hoverDebounceTimer) clearTimeout(hoverDebounceTimer);
-  hoverDebounceTimer = setTimeout(async () => {  // 600ms — 무료 플랜 호출 절약
+  hoverDebounceTimer = setTimeout(() => {
     if (currentHoverIso !== d.iso3) return;
-    const result = await fetchWeeklyIndicators(d.iso3);
-    if (currentHoverIso !== d.iso3) return;  // May have moved away
+    const result = getWeeklyIndicators(d.iso3);
 
     let evHtml = '';
     if (result && result.items && result.items.length > 0) {
-      evHtml = '<div class="mt-events">' + result.items.slice(0,4).map(ev => {
-        const dot = ev.importance === 'high' ? '<span style="color:var(--high)">●</span>'
-                  : ev.importance === 'medium' ? '<span style="color:var(--mid)">●</span>'
+      evHtml = '<div class="mt-events">' + result.items.slice(0,4).map(item => {
+        const dot = item.importance === 'high' ? '<span style="color:var(--high)">●</span>'
+                  : item.importance === 'medium' ? '<span style="color:var(--mid)">●</span>'
                   : '<span style="color:var(--low)">●</span>';
-        // Only show time if it exists (API data); static data has no time field
-        const timeStr = ev.time ? `<span class="mt-ev-time">(${ev.time})</span>` : '';
+        const timeStr = item.time ? `<span class="mt-ev-time">(${item.time})</span>` : '';
         return `<div class="mt-ev">
           <span class="mt-ev-dot">${dot}</span>
-          <span class="mt-ev-name">${ev.name}</span>
+          <span class="mt-ev-name">${item.name}</span>
           ${timeStr}
         </div>`;
       }).join('') + '</div>';
-
-      // Show disclaimer only for static data (day is unknown, time is approximate)
-      if (result.isStatic) {
-        evHtml += `<div style="margin-top:5px;padding:4px 6px;background:rgba(255,170,0,.07);border:1px solid rgba(255,170,0,.2);border-radius:5px;font-size:8px;color:var(--mid);line-height:1.5;">
-          ⚠️ 시간은 통상값 / 정확한 <u>날짜</u>는 캘린더뷰 참조
-        </div>`;
-      }
+      evHtml += `<div style="margin-top:5px;padding:4px 6px;background:rgba(255,170,0,.07);border:1px solid rgba(255,170,0,.2);border-radius:5px;font-size:8px;color:var(--mid);line-height:1.5;">
+        ⚠️ 시간은 통상값 / 정확한 날짜는 캘린더뷰 참조
+      </div>`;
     } else {
       evHtml = '<div class="mt-loading" style="margin-top:4px;">이번주 주요 일정 없음</div>';
     }
@@ -1147,7 +1080,7 @@ function onCountryLeave(tipId) {
 }
 
 /* ══ MAP CLICK — RIGHT PANEL INVESTMENT STRATEGY ══ */
-async function onCountryClick(iso3) {
+function onCountryClick(iso3) {
   const c = CMAP[iso3];
   const countryName = c ? `${c.flag} ${c.name}` : iso3;
 
@@ -1158,115 +1091,50 @@ async function onCountryClick(iso3) {
 
   // Show loading state
   const resultArea = document.getElementById('ai-result-area');
-  resultArea.innerHTML = `<div class="sc-loading">
-    <div style="font-size:24px;opacity:.3;margin-bottom:8px;">📊</div>
-    <div>이번주 경제지표 분석 중...</div>
-  </div>`;
+  const result = getWeeklyIndicators(iso3);
 
-  // Fetch indicators
-  const fetched = await fetchWeeklyIndicators(iso3);
-
-  if (!fetched || !fetched.items || fetched.items.length === 0) {
-    resultArea.innerHTML = `<div style="text-align:center;padding:20px;color:var(--dimmer);font-size:11px;">이번주 주요 경제지표 일정을 찾지 못했습니다.</div>`;
+  if (!result || !result.items || result.items.length === 0) {
+    resultArea.innerHTML = `<div style="text-align:center;padding:20px;color:var(--dimmer);font-size:11px;">이번주 주요 경제지표 일정이 없습니다.</div>`;
     return;
   }
 
-  const {items: indicators, isStatic} = fetched;
-
-  // If no API key, show indicator list (no time info) + guidance
-  if (!apiKey) {
-    const staticNote = `<div style="background:rgba(255,170,0,.06);border:1px solid rgba(255,170,0,.2);border-radius:7px;padding:9px 11px;font-size:10px;color:var(--mid);line-height:1.7;margin-bottom:10px;">
-      ⚠️ 시간은 통상 고정값입니다. 정확한 <strong>발표 날짜</strong>는 <strong>캘린더뷰(Investing.com)</strong>에서 확인하세요.
-    </div>`;
-    resultArea.innerHTML = staticNote + `
-      <div style="margin-bottom:10px;">
-        <div class="rp-section-head"><span class="rp-section-label">이번주 주요 지표</span><div class="rp-section-line"></div></div>
-        ${indicators.map(ev => {
-          const impColor = ev.importance === 'high' ? 'var(--high)' : ev.importance === 'medium' ? 'var(--mid)' : 'var(--low)';
-          return `<div style="display:flex;align-items:center;gap:8px;padding:7px 10px;background:var(--s3);border:1px solid var(--border);border-radius:7px;margin-bottom:5px;">
-            <span style="color:${impColor};font-size:10px;">●</span>
-            <div style="flex:1;">
-              <div style="font-size:11px;color:var(--text);">${ev.name}</div>
-              ${ev.time ? `<div style="font-size:9px;color:var(--dimmer);font-family:'IBM Plex Mono',monospace;">${ev.time} KST</div>` : ''}
-            </div>
-          </div>`;
-        }).join('')}
-      </div>
-      <div style="background:rgba(0,229,255,.05);border:1px solid rgba(0,229,255,.15);border-radius:8px;padding:11px;font-size:10px;color:var(--dim);line-height:1.7;">
-        💡 Gemini API 키를 입력하면 각 지표별 <strong style="color:var(--accent)">매수/매도/중립/관망</strong> 전략과 투자 유의사항을 AI가 자동으로 분석해드립니다.
-      </div>`;
-    return;
-  }
-
-  // With API key — fetch investment strategy
-  const strategyHTML = await fetchInvestmentStrategy(iso3, countryName, indicators);
-  resultArea.innerHTML = strategyHTML;
-}
-
-async function fetchInvestmentStrategy(iso3, countryName, indicators) {
-  const indicatorList = indicators.map((ev,i)=>`${i+1}. ${ev.name}${ev.time ? ' ('+ev.time+')' : ''} 중요도:${ev.importance}`).join('\n');
-
-  try {
-    const prompt = `당신은 글로벌 매크로 투자 전문가입니다. 이번주 ${countryName}의 경제지표 발표를 바탕으로 투자전략을 분석해주세요.
-
-이번주 예정 지표:
-${indicatorList}
-
-각 지표별로 아래 JSON 형식으로만 응답하세요 (다른 텍스트 없이):
-[{
-  "name": "지표명",
-  "time": "발표시간",
-  "importance": "high|medium|low",
-  "strategy": "매수|매도|중립|관망",
-  "note": "투자자 유의사항 2~3문장",
-  "assets": ["영향자산1","영향자산2","영향자산3"]
-}]`;
-
-    const data = await geminiCall({
-      contents: [{ parts: [{ text: prompt }] }],
-      generationConfig: { maxOutputTokens: 1536, temperature: 0.5 }
-    }, msg => {
-      // 429 대기 중 우측 패널에 안내 표시
-      const area = document.getElementById('ai-result-area');
-      if (area) area.innerHTML = `<div class="sc-loading"><div style="font-size:20px;opacity:.4;margin-bottom:8px;">⏳</div><div>${msg}</div></div>`;
-    });
-    const text = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
-    const jsonMatch = text.match(/\[[\s\S]*\]/);
-    if (!jsonMatch) throw new Error('파싱 실패');
-
-    const cards = JSON.parse(jsonMatch[0]);
-    return renderStrategyCards(cards);
-
-  } catch(e) {
-    // Fallback: show indicators with generic strategy UI
-    return `<div style="color:var(--a2);font-size:11px;padding:10px;background:rgba(255,92,56,.06);border:1px solid rgba(255,92,56,.2);border-radius:8px;margin-bottom:10px;">
-      ⚠️ AI 분석 실패: ${e.message}
-    </div>` + renderStrategyCards(indicators.map(ev => ({
-      name: ev.name, time: ev.time, importance: ev.importance,
-      strategy: '관망', note: '데이터 로드 중 오류가 발생했습니다. 캘린더에서 실제 수치를 확인하세요.', assets: []
-    })));
-  }
-}
-
-function renderStrategyCards(cards) {
+  const {items} = result;
   const impLabel = {high:'🔴 높음', medium:'🟡 중간', low:'🟢 낮음'};
-  return cards.map(card => {
-    const badgeClass = `scb-${card.strategy || '관망'}`;
-    const assetTags = (card.assets || []).map(a =>
-      `<span class="sc-asset-tag">${a}</span>`
-    ).join('');
+
+  const cardList = items.map(ev => {
+    const impColor = ev.importance === 'high' ? 'var(--high)' : ev.importance === 'medium' ? 'var(--mid)' : 'var(--low)';
     return `<div class="strat-card">
       <div class="sc-top">
         <div class="sc-info">
-          <div class="sc-name">${card.name}</div>
-          <div class="sc-time">${card.time || ''} · ${impLabel[card.importance] || card.importance}</div>
+          <div class="sc-name">${ev.name}</div>
+          <div class="sc-time">${ev.time ? ev.time + ' KST · ' : ''}${impLabel[ev.importance] || ev.importance}</div>
         </div>
-        <span class="sc-badge ${badgeClass}">${card.strategy || '관망'}</span>
+        <span style="color:${impColor};font-size:16px;flex-shrink:0;">●</span>
       </div>
-      ${card.note ? `<div class="sc-note">${card.note}</div>` : ''}
-      ${assetTags ? `<div class="sc-assets">${assetTags}</div>` : ''}
     </div>`;
   }).join('');
+
+  // 클릭 시 프롬프트 복사 + Gemini 열기
+  const _promptEncoded = encodeURIComponent(buildCountryPrompt(countryName, items));
+  resultArea.innerHTML = `
+    <div style="background:rgba(255,170,0,.06);border:1px solid rgba(255,170,0,.15);border-radius:7px;padding:8px 11px;font-size:10px;color:var(--mid);margin-bottom:10px;">
+      ⚠️ 시간은 통상값 · 정확한 날짜는 캘린더뷰(Investing.com) 참조
+    </div>
+    <div class="rp-section-head"><span class="rp-section-label">이번주 주요 지표</span><div class="rp-section-line"></div></div>
+    ${cardList}
+    <button class="gemini-open-btn" onclick="openGeminiWithCountry('${iso3}','${encodeURIComponent(countryName)}')">
+      ✨ Gemini에서 투자전략 분석하기
+    </button>`;
+}
+
+async function openGeminiWithCountry(iso3, encodedName) {
+  const countryName = decodeURIComponent(encodedName);
+  const result = getWeeklyIndicators(iso3);
+  const items = result?.items || [];
+  const prompt = buildCountryPrompt(countryName, items);
+  const copied = await copyToClipboard(prompt);
+  openGemini();
+  showCopyToast(copied ? `✓ ${countryName} 분석 프롬프트 복사 완료` : '⚠️ 복사 실패 — 수동 복사해주세요');
 }
 
 /* ══ COUNTRY FILTER LIST ══ */
@@ -1304,7 +1172,6 @@ function toggleCountry(iso) {
   updateCalIframe();
   // 국가 변경 → 알림 패널 즉시 갱신
   showStaticNotifyPanel();
-  if (notifyEnabled && apiKey) checkEconomicEvents();
 }
 
 function clearCountries() {
@@ -1349,34 +1216,15 @@ function switchView(view, btn) {
   if (view==='map' && !bigMapG) initBigMap();
 }
 
-/* ══ AI ANALYSIS (manual query) ══ */
-async function runAI() {
-  if (!apiKey) { alert('우측 상단에서 Gemini API 키를 먼저 입력하세요.'); return; }
-  const query = document.getElementById('ai-query').value.trim();
-  if (!query) { document.getElementById('ai-query').focus(); return; }
-
-  document.getElementById('rp-title').textContent = query;
-  document.getElementById('rp-title').classList.remove('ph');
-
-  const btn = document.getElementById('ai-btn');
-  btn.disabled = true; btn.classList.add('loading'); btn.textContent = '✨ 분석 중...';
-
-  const resultArea = document.getElementById('ai-result-area');
-  resultArea.innerHTML = `<div class="ai-result">
-    <div class="air-header">
-      <span class="air-icon">✨</span>
-      <span class="air-name streaming">Gemini AI 분석 중</span>
-      <span class="air-badge">AI</span>
-    </div>
-    <div id="stream-content" class="air-text streaming" style="min-height:60px;"></div>
-  </div>`;
-
-  try {
-    const prompt = `당신은 글로벌 매크로 경제 전문 애널리스트입니다. 다음 경제 지표 관련 질문에 한국어로 상세하게 분석해주세요.
+/* ══ GEMINI HELPERS ══ */
+function buildQueryPrompt(query) {
+  const countries = [...activeCountries].map(iso => CMAP[iso]?.name || iso).join(', ');
+  const dateStr = new Date().toLocaleDateString('ko-KR');
+  return `당신은 글로벌 매크로 경제 전문 애널리스트입니다. 다음 경제 지표 관련 질문에 한국어로 상세하게 분석해주세요.
 
 질문: ${query}
-현재 날짜: ${new Date().toLocaleDateString('ko-KR')}
-선택된 국가: ${[...activeCountries].map(iso=>CMAP[iso]?.name||iso).join(', ')}
+현재 날짜: ${dateStr}
+관심 국가: ${countries}
 
 다음 구조로 분석해주세요:
 
@@ -1394,53 +1242,84 @@ async function runAI() {
 
 ## 리스크
 (이 분석의 불확실성과 주의사항)`;
+}
 
-    const data = await geminiCall({
-      contents: [{ parts: [{ text: prompt }] }],
-      generationConfig: { maxOutputTokens: 2048, temperature: 0.7 }
-    }, msg => {
-      const nameEl = document.querySelector('.air-name');
-      if (nameEl) nameEl.textContent = msg;
-    });
-    const fullText = data.candidates?.[0]?.content?.parts?.[0]?.text || '응답을 받지 못했습니다.';
+function buildCountryPrompt(countryName, indicators) {
+  const dateStr = new Date().toLocaleDateString('ko-KR');
+  const list = indicators.map(ev => `- ${ev.name} (${ev.time} KST, 중요도: ${ev.importance})`).join('\n');
+  return `당신은 글로벌 매크로 투자 전문가입니다. ${countryName}의 이번주 주요 경제지표를 바탕으로 투자전략을 분석해주세요.
+현재 날짜: ${dateStr}
 
-    const contentEl = document.getElementById('stream-content');
-    const nameEl = document.querySelector('.air-name');
-    if (nameEl) { nameEl.textContent = 'Gemini 분석'; nameEl.classList.remove('streaming'); }
+이번주 예정 지표:
+${list}
 
-    if (contentEl) {
-      contentEl.innerHTML = renderMarkdown(fullText);
-      contentEl.classList.remove('streaming');
-    }
+각 지표별로 다음을 분석해주세요:
+1. 지표 의미와 시장 중요성
+2. 예상 시장 영향 (주식 / 채권 / 환율)
+3. 투자 전략 제안 (매수 / 매도 / 중립 / 관망)
+4. 주요 리스크 및 유의사항`;
+}
 
-    const stratMatch = fullText.match(/(매수|매도|관망|중립)/);
-    const strat = stratMatch ? stratMatch[1] : null;
-    if (strat) {
-      const header = document.querySelector('.air-header');
-      if (header && !header.querySelector('.strat-badge')) {
-        const pill = document.createElement('span');
-        pill.className = `strat-badge sb-${strat}`;
-        pill.textContent = strat;
-        header.appendChild(pill);
-      }
-    }
-
-  } catch(err) {
-    document.getElementById('ai-result-area').innerHTML = `
-      <div class="ai-result" style="border-color:var(--a2);">
-        <div style="color:var(--a2);font-size:12px;font-weight:700;margin-bottom:6px;">❌ 오류 발생</div>
-        <div class="air-text">${err.message}</div>
-      </div>`;
-  } finally {
-    btn.disabled = false; btn.classList.remove('loading'); btn.textContent = '✨ Gemini AI 분석 실행';
+async function copyToClipboard(text) {
+  try {
+    await navigator.clipboard.writeText(text);
+    return true;
+  } catch {
+    // fallback: textarea trick
+    const ta = document.createElement('textarea');
+    ta.value = text;
+    ta.style.cssText = 'position:fixed;opacity:0;top:0;left:0;';
+    document.body.appendChild(ta);
+    ta.select();
+    const ok = document.execCommand('copy');
+    document.body.removeChild(ta);
+    return ok;
   }
 }
 
-function renderMarkdown(text) {
-  return text
-    .replace(/## (.+)/g, '<div style="font-size:10px;letter-spacing:2px;color:var(--dimmer);font-family:IBM Plex Mono,monospace;margin:12px 0 5px;text-transform:uppercase;">$1</div>')
-    .replace(/\*\*(.+?)\*\*/g, '<strong style="color:var(--accent)">$1</strong>')
-    .replace(/\n/g, '<br>');
+function showCopyToast(msg = '✓ 프롬프트가 클립보드에 복사됐습니다') {
+  let toast = document.getElementById('copy-toast');
+  if (!toast) {
+    toast = document.createElement('div');
+    toast.id = 'copy-toast';
+    toast.className = 'copy-toast';
+    document.body.appendChild(toast);
+  }
+  toast.textContent = msg;
+  toast.classList.add('show');
+  setTimeout(() => toast.classList.remove('show'), 2800);
+}
+
+function openGemini() {
+  window.open('https://gemini.google.com', 'gemini_macro',
+    'width=980,height=720,scrollbars=yes,resizable=yes,noopener');
+}
+
+/* ══ AI ANALYSIS (manual query) ══ */
+async function runAI() {
+  const query = document.getElementById('ai-query').value.trim();
+  if (!query) { document.getElementById('ai-query').focus(); return; }
+
+  document.getElementById('rp-title').textContent = query;
+  document.getElementById('rp-title').classList.remove('ph');
+
+  const prompt = buildQueryPrompt(query);
+  const copied = await copyToClipboard(prompt);
+
+  openGemini();
+  showCopyToast(copied ? '✓ 프롬프트 복사 완료 — Gemini에 붙여넣기 하세요' : '⚠️ 복사 실패 — 수동으로 복사해주세요');
+
+  // 우측 패널에 복사된 프롬프트 미리보기 표시
+  document.getElementById('ai-result-area').innerHTML = `
+    <div class="ai-result">
+      <div class="air-header">
+        <span class="air-icon">📋</span>
+        <span class="air-name">복사된 프롬프트</span>
+        <span class="air-badge">COPIED</span>
+      </div>
+      <div class="air-text" style="font-size:10px;white-space:pre-wrap;color:var(--dimmer);max-height:200px;overflow-y:auto;">${prompt.replace(/</g,'&lt;')}</div>
+      <button class="gemini-open-btn" onclick="openGemini()">↗ Gemini 열기</button>
+    </div>`;
 }
 
 /* ══ MAPS ══ */
@@ -1612,55 +1491,26 @@ function showStaticNotifyPanel() {
   updateNotifyPanel(all.length ? all : null);
 }
 
-async function checkEconomicEvents() {
+/* 정적 일정 기반으로 오늘 발표 예정 이벤트에 시간 타이머 등록 */
+function checkEconomicEvents() {
   if (!notifyEnabled) return;
+  showStaticNotifyPanel();
 
-  // API 없으면 정적 패널만 유지
-  if (!apiKey) { showStaticNotifyPanel(); return; }
-
-  const countryNames = [...activeCountries].map(iso => CMAP[iso]?.name || iso);
   const kstNow = new Date(new Date().toLocaleString('en-US', {timeZone: 'Asia/Seoul'}));
-  const today = `${kstNow.getFullYear()}-${String(kstNow.getMonth()+1).padStart(2,'0')}-${String(kstNow.getDate()).padStart(2,'0')}`;
+  const todayStr = `${kstNow.getFullYear()}-${String(kstNow.getMonth()+1).padStart(2,'0')}-${String(kstNow.getDate()).padStart(2,'0')}`;
 
-  try {
-    const prompt = `오늘(${today}, KST 기준) 다음 국가들의 주요 경제지표 발표 일정을 알려주세요: ${countryNames.join(', ')}
-
-JSON 형식으로만 응답하세요 (다른 텍스트 없이):
-[{"country":"국가명","flag":"국기이모지","indicator":"지표명","time":"HH:MM","importance":"high/medium/low","status":"발표완료/예정"}]
-
-오늘 발표 일정이 있는 것만, 중요도 높은 순으로 최대 10개.
-오늘 일정이 없으면 빈 배열 [].`;
-
-    const data = await geminiCall({
-      contents: [{ parts: [{ text: prompt }] }],
-      generationConfig: { maxOutputTokens: 1024, temperature: 0.1 }
-    }).catch(() => null);
-    if (!data) { showStaticNotifyPanel(); return; }
-
-    const text = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
-    const jsonMatch = text.match(/\[[\s\S]*\]/);
-    if (!jsonMatch) { showStaticNotifyPanel(); return; }
-
-    const events = JSON.parse(jsonMatch[0]);
-    if (!events.length) { showStaticNotifyPanel(); return; }
-
-    // 예정 이벤트: 정확한 발표 시각에 타이머 등록
-    scheduleEventNotifications(events, today);
-
-    // 이미 발표완료된 이벤트: 아직 알림 보내지 않은 것만 발송
-    events.filter(ev => ev.status === '발표완료').forEach(ev => {
-      const key = `${today}-${ev.country}-${ev.indicator}`;
-      if (!lastNotifiedEvents.has(key)) {
-        lastNotifiedEvents.add(key);
-        showNotification(ev);
-      }
-    });
-
-    updateNotifyPanel(events);
-  } catch(e) {
-    console.log('알림 체크 오류:', e);
-    showStaticNotifyPanel();
-  }
+  // 선택된 국가의 정적 일정에서 오늘 발표 시각 타이머 등록
+  const allEvents = [];
+  [...activeCountries].forEach(iso => {
+    const c = CMAP[iso];
+    const items = STATIC_WEEKLY[iso];
+    if (c && items) items.forEach(ev => allEvents.push({
+      country: c.name, flag: c.flag,
+      indicator: ev.name, time: ev.time,
+      importance: ev.importance, status: '예정'
+    }));
+  });
+  scheduleEventNotifications(allEvents, todayStr);
 }
 
 /* 발표 예정 이벤트를 정확한 KST 시각에 맞춰 setTimeout 등록 */
