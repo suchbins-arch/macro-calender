@@ -681,10 +681,10 @@ header {
 /* Notify panel */
 .notify-panel-wrap { margin-bottom: 12px; }
 
-/* Gemini Guide Panel */
-.gemini-guide {
-  background: linear-gradient(135deg, rgba(0,229,255,.05), rgba(0,100,200,.08));
-  border: 1px solid rgba(0,229,255,.2);
+/* Perplexity Guide Panel */
+.perplexity-guide {
+  background: linear-gradient(135deg, rgba(32,196,164,.05), rgba(0,160,120,.08));
+  border: 1px solid rgba(32,196,164,.25);
   border-radius: 10px;
   padding: 12px 14px;
   margin-bottom: 14px;
@@ -692,7 +692,7 @@ header {
 .gg-title {
   font-size: 9px;
   letter-spacing: 2px;
-  color: var(--accent);
+  color: #20c4a4;
   font-family: 'IBM Plex Mono', monospace;
   margin-bottom: 9px;
 }
@@ -706,17 +706,17 @@ header {
 }
 .gg-num {
   width: 16px; height: 16px;
-  background: rgba(0,229,255,.15);
-  border: 1px solid rgba(0,229,255,.3);
+  background: rgba(32,196,164,.15);
+  border: 1px solid rgba(32,196,164,.35);
   border-radius: 50%;
   display: flex; align-items: center; justify-content: center;
-  font-size: 9px; color: var(--accent);
+  font-size: 9px; color: #20c4a4;
   font-family: 'IBM Plex Mono', monospace;
   flex-shrink: 0;
 }
 
-/* Gemini open button inside result panel */
-.gemini-open-btn {
+/* Perplexity open button inside result panel */
+.pplx-open-btn {
   display: flex;
   align-items: center;
   justify-content: center;
@@ -724,7 +724,7 @@ header {
   width: 100%;
   padding: 9px;
   margin-top: 10px;
-  background: linear-gradient(135deg, #1a3a8a, #0066bb);
+  background: linear-gradient(135deg, #0a7a5e, #20c4a4);
   border: none;
   border-radius: 8px;
   color: #fff;
@@ -734,8 +734,8 @@ header {
   font-family: 'Noto Sans KR', sans-serif;
   transition: all .2s;
 }
-.gemini-open-btn:hover { background: linear-gradient(135deg, #2255bb, #0088ee); transform: translateY(-1px); }
-.gemini-open-btn:active { transform: translateY(0); }
+.pplx-open-btn:hover { background: linear-gradient(135deg, #0d9970, #2eddb8); transform: translateY(-1px); }
+.pplx-open-btn:active { transform: translateY(0); }
 
 /* Copy feedback toast */
 .copy-toast {
@@ -873,13 +873,13 @@ header {
     </div>
 
     <div class="ai-section">
-      <!-- Gemini 안내 패널 -->
-      <div class="gemini-guide">
-        <div class="gg-title">✨ GEMINI AI 분석 방법</div>
+      <!-- Perplexity 안내 패널 -->
+      <div class="perplexity-guide">
+        <div class="gg-title">🔍 PERPLEXITY AI 분석 방법</div>
         <div class="gg-steps">
           <div class="gg-step"><span class="gg-num">1</span>아래 입력창에 분석할 지표 입력</div>
           <div class="gg-step"><span class="gg-num">2</span>버튼 클릭 → 프롬프트 자동 복사</div>
-          <div class="gg-step"><span class="gg-num">3</span>Gemini 창에 붙여넣기(Ctrl+V)</div>
+          <div class="gg-step"><span class="gg-num">3</span>Perplexity 창에 붙여넣기(Ctrl+V)</div>
         </div>
       </div>
 
@@ -901,7 +901,7 @@ header {
           <div class="rp-section-line"></div>
         </div>
         <input class="ai-search-input" id="ai-query" placeholder="예: 미국 CPI 3.2% 발표 — 시장 영향 분석해줘" onkeydown="if(event.key==='Enter')runAI()">
-        <button class="ai-btn" id="ai-btn" onclick="runAI()">✨ Gemini에서 분석하기 (프롬프트 복사)</button>
+        <button class="ai-btn" id="ai-btn" onclick="runAI()">🔍 Perplexity에서 분석하기 (프롬프트 복사)</button>
       </div>
 
       <!-- AI Result area -->
@@ -911,7 +911,7 @@ header {
           <div style="font-size:11px;line-height:1.8;">
             좌측 캘린더에서 발표 수치 확인 후<br>
             분석할 지표를 위 입력창에 입력하세요<br>
-            <span style="color:var(--dimmer);font-size:10px;">지도뷰에서 국가 클릭 → 지표별 Gemini 분석</span>
+            <span style="color:var(--dimmer);font-size:10px;">지도뷰에서 국가 클릭 → 지표별 Perplexity 분석</span>
           </div>
         </div>
       </div>
@@ -1114,7 +1114,7 @@ function onCountryClick(iso3) {
     </div>`;
   }).join('');
 
-  // 클릭 시 프롬프트 복사 + Gemini 열기
+  // 클릭 시 프롬프트 복사 + Perplexity 열기
   const _promptEncoded = encodeURIComponent(buildCountryPrompt(countryName, items));
   resultArea.innerHTML = `
     <div style="background:rgba(255,170,0,.06);border:1px solid rgba(255,170,0,.15);border-radius:7px;padding:8px 11px;font-size:10px;color:var(--mid);margin-bottom:10px;">
@@ -1122,18 +1122,18 @@ function onCountryClick(iso3) {
     </div>
     <div class="rp-section-head"><span class="rp-section-label">이번주 주요 지표</span><div class="rp-section-line"></div></div>
     ${cardList}
-    <button class="gemini-open-btn" onclick="openGeminiWithCountry('${iso3}','${encodeURIComponent(countryName)}')">
-      ✨ Gemini에서 투자전략 분석하기
+    <button class="pplx-open-btn" onclick="openPerplexityWithCountry('${iso3}','${encodeURIComponent(countryName)}')">
+      🔍 Perplexity에서 투자전략 분석하기
     </button>`;
 }
 
-async function openGeminiWithCountry(iso3, encodedName) {
+async function openPerplexityWithCountry(iso3, encodedName) {
   const countryName = decodeURIComponent(encodedName);
   const result = getWeeklyIndicators(iso3);
   const items = result?.items || [];
   const prompt = buildCountryPrompt(countryName, items);
   const copied = await copyToClipboard(prompt);
-  openGemini();
+  openPerplexity();
   showCopyToast(copied ? `✓ ${countryName} 분석 프롬프트 복사 완료` : '⚠️ 복사 실패 — 수동 복사해주세요');
 }
 
@@ -1216,48 +1216,69 @@ function switchView(view, btn) {
   if (view==='map' && !bigMapG) initBigMap();
 }
 
-/* ══ GEMINI HELPERS ══ */
+/* ══ PERPLEXITY HELPERS ══ */
 function buildQueryPrompt(query) {
   const countries = [...activeCountries].map(iso => CMAP[iso]?.name || iso).join(', ');
   const dateStr = new Date().toLocaleDateString('ko-KR');
-  return `당신은 글로벌 매크로 경제 전문 애널리스트입니다. 다음 경제 지표 관련 질문에 한국어로 상세하게 분석해주세요.
-
-질문: ${query}
-현재 날짜: ${dateStr}
+  return `현재 날짜: ${dateStr}
 관심 국가: ${countries}
 
-다음 구조로 분석해주세요:
+다음 질문에 대해 한국어로 상세하게 분석해주세요:
 
-## 지표 개요
-(이 지표가 무엇인지, 왜 중요한지)
+질문: ${query}
 
-## 수치 해석
-(발표된 수치의 의미, 예상 대비 서프라이즈/쇼크 여부)
+아래 순서로 답변해주세요:
 
-## 시장 영향
-(주식, 채권, 환율, 원자재 등 각 자산에 미치는 영향)
+## 1. 지표 개요 및 핵심 개념
+이 지표의 정의, 측정 방식, 발표 기관 및 왜 시장에서 중요하게 다루어지는지 설명해주세요.
 
-## 투자 전략
-(단기/중기 관점에서 매수/매도/관망 전략 제안, 구체적인 섹터/자산군 언급)
+## 2. 최신 수치 해석
+최근 발표된 수치의 의미, 예상치 대비 서프라이즈/쇼크 여부, 과거 추세 대비 변화 분석
 
-## 리스크
-(이 분석의 불확실성과 주의사항)`;
+## 3. 시장 영향 분석
+주식, 채권, 환율, 원자재 등 각 자산군에 미치는 단기·중기 영향을 구체적으로 설명해주세요.
+
+## 4. 투자 전략 제안
+매수 / 매도 / 중립 / 관망 관점에서 구체적인 섹터, 자산군, ETF 또는 대표 종목을 포함해 제안해주세요.
+
+## 5. 리스크 및 유의사항
+이 분석의 불확실성, 반대 시나리오, 주의해야 할 변수
+
+## 6. 관련 참고 자료 및 기사
+이 지표와 관련된 아래 내용을 최신 정보로 찾아서 링크와 함께 제공해주세요:
+- 지표 개념을 쉽게 설명하는 아티클 또는 공식 자료
+- 투자자 관점의 분석 리포트 또는 칼럼
+- 최근 발표와 관련된 주요 뉴스 기사 (국문 또는 영문)`;
 }
 
 function buildCountryPrompt(countryName, indicators) {
   const dateStr = new Date().toLocaleDateString('ko-KR');
   const list = indicators.map(ev => `- ${ev.name} (${ev.time} KST, 중요도: ${ev.importance})`).join('\n');
-  return `당신은 글로벌 매크로 투자 전문가입니다. ${countryName}의 이번주 주요 경제지표를 바탕으로 투자전략을 분석해주세요.
-현재 날짜: ${dateStr}
+  return `현재 날짜: ${dateStr}
+분석 대상: ${countryName}
 
-이번주 예정 지표:
+이번주 예정 경제지표:
 ${list}
 
-각 지표별로 다음을 분석해주세요:
-1. 지표 의미와 시장 중요성
-2. 예상 시장 영향 (주식 / 채권 / 환율)
-3. 투자 전략 제안 (매수 / 매도 / 중립 / 관망)
-4. 주요 리스크 및 유의사항`;
+위 지표들을 바탕으로 한국어로 다음 순서로 분석해주세요:
+
+## 1. 지표별 의미 및 시장 중요성
+각 지표의 정의, 발표 맥락, 현재 시장에서의 중요도
+
+## 2. 예상 시장 영향
+각 지표 발표가 주식 / 채권 / 환율에 미칠 방향성을 구체적으로 설명해주세요.
+
+## 3. 투자 전략 제안 (매수 / 매도 / 중립 / 관망)
+구체적인 섹터, 자산군, ETF 또는 대표 종목을 포함해 전략을 제안해주세요.
+
+## 4. 주요 리스크 및 유의사항
+불확실성 요인, 반대 시나리오, 주의할 변수
+
+## 5. 관련 참고 자료 및 기사
+이번주 ${countryName} 지표 발표와 관련된 아래 내용을 최신 정보로 찾아서 링크와 함께 제공해주세요:
+- 각 지표 개념을 투자자 시각으로 설명한 아티클
+- 애널리스트 또는 기관의 사전 전망 리포트
+- 최근 발표 결과 또는 시장 반응 관련 뉴스 기사 (국문 또는 영문)`;
 }
 
 async function copyToClipboard(text) {
@@ -1290,8 +1311,8 @@ function showCopyToast(msg = '✓ 프롬프트가 클립보드에 복사됐습�
   setTimeout(() => toast.classList.remove('show'), 2800);
 }
 
-function openGemini() {
-  window.open('https://gemini.google.com', 'gemini_macro',
+function openPerplexity() {
+  window.open('https://www.perplexity.ai', 'perplexity_macro',
     'width=980,height=720,scrollbars=yes,resizable=yes,noopener');
 }
 
@@ -1306,8 +1327,8 @@ async function runAI() {
   const prompt = buildQueryPrompt(query);
   const copied = await copyToClipboard(prompt);
 
-  openGemini();
-  showCopyToast(copied ? '✓ 프롬프트 복사 완료 — Gemini에 붙여넣기 하세요' : '⚠️ 복사 실패 — 수동으로 복사해주세요');
+  openPerplexity();
+  showCopyToast(copied ? '✓ 프롬프트 복사 완료 — Perplexity에 붙여넣기 하세요' : '⚠️ 복사 실패 — 수동으로 복사해주세요');
 
   // 우측 패널에 복사된 프롬프트 미리보기 표시
   document.getElementById('ai-result-area').innerHTML = `
@@ -1318,7 +1339,7 @@ async function runAI() {
         <span class="air-badge">COPIED</span>
       </div>
       <div class="air-text" style="font-size:10px;white-space:pre-wrap;color:var(--dimmer);max-height:200px;overflow-y:auto;">${prompt.replace(/</g,'&lt;')}</div>
-      <button class="gemini-open-btn" onclick="openGemini()">↗ Gemini 열기</button>
+      <button class="pplx-open-btn" onclick="openPerplexity()">↗ Perplexity 열기</button>
     </div>`;
 }
 
