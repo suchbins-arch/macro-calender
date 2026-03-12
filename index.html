@@ -236,7 +236,7 @@ header {
   z-index: 50;
   font-size: 10px;
   box-shadow: 0 0 14px rgba(0,229,255,.15);
-  max-width: 220px;
+  max-width: 260px;
 }
 .mtip.show { opacity: 1; }
 .mt-cn { color: var(--accent); font-weight: 700; margin-bottom: 4px; font-size: 11px; }
@@ -255,6 +255,107 @@ header {
 .mt-ev-name { color: var(--text); flex: 1; }
 .mt-ev-time { color: var(--dimmer); font-family: 'IBM Plex Mono', monospace; white-space: nowrap; }
 .mt-loading { color: var(--dimmer); font-size: 9px; font-style: italic; }
+.mt-ev-val { color: #20c4a4; font-family: 'IBM Plex Mono', monospace; font-size: 8px; white-space: nowrap; margin-left: auto; padding-left: 4px; }
+
+/* ── Indicator toggle cards (right panel) ── */
+.ind-cat-head {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 8px;
+  letter-spacing: 1.5px;
+  color: var(--dimmer);
+  font-family: 'IBM Plex Mono', monospace;
+  text-transform: uppercase;
+  margin: 12px 0 5px;
+  padding-bottom: 4px;
+  border-bottom: 1px solid rgba(255,255,255,.06);
+}
+.ind-cat-head:first-of-type { margin-top: 4px; }
+.ind-card {
+  background: rgba(255,255,255,.03);
+  border: 1px solid rgba(255,255,255,.07);
+  border-radius: 8px;
+  margin-bottom: 5px;
+  overflow: hidden;
+  transition: border-color .15s;
+}
+.ind-card.must-see {
+  border-color: rgba(255,170,0,.25);
+  background: rgba(255,170,0,.03);
+}
+.ind-card-top {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 7px 9px;
+  cursor: pointer;
+  user-select: none;
+}
+.ind-card-top:hover { background: rgba(255,255,255,.03); }
+.ind-imp-dot { font-size: 7px; flex-shrink: 0; }
+.ind-name {
+  flex: 1;
+  font-size: 10px;
+  color: var(--text);
+  line-height: 1.3;
+}
+.ind-card.must-see .ind-name { color: #fff; }
+.ind-last-val {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 9px;
+  color: #20c4a4;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+.ind-time {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 8px;
+  color: var(--dimmer);
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+.ind-toggle-arrow {
+  font-size: 8px;
+  color: var(--dimmer);
+  flex-shrink: 0;
+  transition: transform .2s;
+}
+.ind-card.open .ind-toggle-arrow { transform: rotate(180deg); }
+.ind-card-body {
+  max-height: 0;
+  overflow: hidden;
+  transition: max-height .25s ease;
+}
+.ind-card.open .ind-card-body { max-height: 200px; }
+.ind-card-desc {
+  padding: 0 9px 9px 9px;
+  font-size: 10px;
+  color: var(--dim);
+  line-height: 1.65;
+  border-top: 1px solid rgba(255,255,255,.06);
+  padding-top: 7px;
+}
+.ind-last-row {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  margin-top: 6px;
+  font-size: 9px;
+  color: var(--dimmer);
+  font-family: 'IBM Plex Mono', monospace;
+}
+.ind-last-row-val { color: #20c4a4; font-weight: 600; }
+.ind-must-badge {
+  font-size: 7px;
+  background: rgba(255,170,0,.15);
+  border: 1px solid rgba(255,170,0,.3);
+  color: #ffaa00;
+  border-radius: 3px;
+  padding: 1px 4px;
+  letter-spacing: 0.5px;
+  flex-shrink: 0;
+}
 
 /* Country list */
 .cl-head {
@@ -969,49 +1070,265 @@ const CMAP = {}; COUNTRIES.forEach(c=>CMAP[c.iso]=c);
    ※ 발표 요일은 매달 달라지므로 생략. 시간(KST)은 통상 고정값이므로 표기.
    ※ 정확한 날짜는 캘린더뷰(Investing.com) 참조.
 ══ */
+/* ── STATIC_WEEKLY ──────────────────────────────────────────────────────────
+   mustSee:true  = 노란셀 (필수 지표)
+   mustSee:false = 흰셀  (매크로 전문가 관점 선별 포함)
+   lastValue / lastDate = 최근 발표치 (참고값, 실제 확인은 캘린더뷰)
+──────────────────────────────────────────────────────────────────────────── */
 const STATIC_WEEKLY = {
   USA: [
-    {name:'소비자물가지수 (CPI)',   time:'21:30', importance:'high'},
-    {name:'연준 금리결정 (FOMC)',   time:'03:00', importance:'high'},
-    {name:'신규실업수당청구건수',    time:'21:30', importance:'medium'},
-    {name:'소매판매 (MoM)',         time:'21:30', importance:'medium'},
-    {name:'미시간대 소비자심리',    time:'23:00', importance:'low'},
+    /* 매일 매크로 */
+    {name:'미국 10년물 국채금리',      category:'매일 매크로', time:'상시',  importance:'high',   mustSee:true,
+     lastValue:'4.48%', lastDate:'25.03', unit:'',
+     desc:'글로벌 시중금리의 기준점. 상승 시 주식 밸류에이션 압박·달러 강세 요인. Fed 통화정책 기대와 직결. 모든 자산가격의 할인율 역할.'},
+    {name:'달러 인덱스 (DXY)',          category:'매일 매크로', time:'상시',  importance:'high',   mustSee:true,
+     lastValue:'107.3', lastDate:'25.03', unit:'pt',
+     desc:'EUR/GBP/JPY 등 6개 통화 대비 달러 강도. 상승 시 신흥국 자본유출·원자재 가격 역방향 영향. 글로벌 유동성 바로미터.'},
+    {name:'VIX 공포지수',               category:'매일 매크로', time:'상시',  importance:'high',   mustSee:true,
+     lastValue:'17.4',  lastDate:'25.03', unit:'pt',
+     desc:'S&P500 옵션 내재변동성. 20↑=시장 불안, 30↑=패닉. 극단적 고점은 역발상 매수 시그널로도 활용. 위험자산 포지션 조절 기준.'},
+    /* 고용지표 */
+    {name:'비농업 부문 고용 (NFP)',     category:'고용지표',   time:'21:30', importance:'high',   mustSee:true,
+     lastValue:'143K',  lastDate:'25.01', unit:'명',
+     desc:'Fed 금리결정의 핵심 변수. 예상 크게 상회→긴축 강화 우려→주식↓ 달러↑. 매월 첫 번째 금요일 발표. 수정치 갭도 중요.'},
+    {name:'실업수당 청구건수',           category:'고용지표',   time:'21:30', importance:'high',   mustSee:true,
+     lastValue:'219K',  lastDate:'25.02', unit:'명/주',
+     desc:'주간 고용 컨디션의 실시간 온도계. 25만 초과 시 노동시장 냉각 신호. 연속 청구건수 추세도 함께 주목.'},
+    {name:'ADP 취업자',                  category:'고용지표',   time:'21:15', importance:'medium', mustSee:false,
+     lastValue:'122K',  lastDate:'25.01', unit:'명',
+     desc:'NFP의 선행지표 역할. 다만 최근 NFP와의 상관관계 약화로 단독 해석 주의. 민간 고용의 방향성 참고용.'},
+    {name:'JOLTS (구인·이직)',           category:'고용지표',   time:'23:00', importance:'medium', mustSee:false,
+     lastValue:'7.74M', lastDate:'24.12', unit:'건',
+     desc:'Fed이 중시하는 노동시장 수급 지표. 구인건수 감소=노동시장 완화=금리인하 기대 상승. 이직률(quit rate) 하락=임금 상승 둔화 선행.'},
+    /* 물가지표 */
+    {name:'CPI (소비자물가지수)',        category:'물가지표',   time:'21:30', importance:'high',   mustSee:true,
+     lastValue:'3.0%',  lastDate:'25.01', unit:'YoY',
+     desc:'Fed 2% 목표 대비 핵심 지표. 서프라이즈 상승 시 금리인하 기대 후퇴→성장주↓ 채권↓. 주거비·서비스 물가 끈적임 주목.'},
+    {name:'PPI (생산자물가지수)',        category:'물가지표',   time:'21:30', importance:'high',   mustSee:true,
+     lastValue:'3.3%',  lastDate:'25.01', unit:'YoY',
+     desc:'CPI 선행지표. 기업 원가 부담 측정. 서비스 PPI는 PCE(Fed 선호 인플레 지표)와 연동. 공급망 이슈 조기 포착 가능.'},
+    /* 경기지표 */
+    {name:'GDP 성장률',                  category:'경기지표',   time:'13:30', importance:'high',   mustSee:true,
+     lastValue:'2.3%',  lastDate:'24.Q4', unit:'QoQ연율',
+     desc:'경제 건강도 총합. 잠정→수정→확정 3회 발표. 소비(PCE) 비중 70%↑. 경기침체 판단 기준(2분기 연속 마이너스).'},
+    {name:'소매판매',                    category:'경기지표',   time:'21:30', importance:'high',   mustSee:true,
+     lastValue:'+0.4%', lastDate:'25.01', unit:'MoM',
+     desc:'GDP 70%인 소비의 선행지표. 자동차·휘발유 제외 근원 소매판매가 실제 소비 트렌드를 더 정확히 반영.'},
+    /* 제조업지표 */
+    {name:'ISM 제조업 PMI',             category:'제조업지표', time:'23:00', importance:'high',   mustSee:true,
+     lastValue:'50.9',  lastDate:'25.01', unit:'pt',
+     desc:'50 기준선 위=확장·아래=수축. 신규주문·고용·재고·물가 세부항목이 향후 트렌드 선행. 글로벌 제조업 사이클과 동조.'},
+    {name:'ISM 비제조업 PMI',           category:'비제조업',   time:'23:00', importance:'high',   mustSee:true,
+     lastValue:'52.8',  lastDate:'25.01', unit:'pt',
+     desc:'GDP 80%인 서비스업 경기 측정. 고용지수는 NFP 선행지표 역할. 50선 유지 여부가 경기침체 회피 관건.'},
+    /* 소비자심리 */
+    {name:'미시간대 소비자심리지수',    category:'소비자심리', time:'23:00', importance:'medium', mustSee:true,
+     lastValue:'71.1',  lastDate:'25.02', unit:'pt',
+     desc:'1년·5년 인플레 기대 세부항목을 Fed이 중시. 급락 시 소비위축→경기침체 우려 시그널. 기대지수 vs 현황지수 괴리도 주목.'},
+    /* 금리결정 */
+    {name:'FOMC 금리결정 (점도표)',     category:'금리결정',   time:'03:00', importance:'high',   mustSee:true,
+     lastValue:'4.25~4.50%', lastDate:'25.01', unit:'',
+     desc:'연 8회 개최. 점도표(dot plot)로 향후 금리경로 가이던스 제공. 성명문 문구 변화·파월 기자회견이 시장 방향 결정.'},
+    {name:'FOMC 의사록',                category:'금리결정',   time:'03:00', importance:'medium', mustSee:false,
+     lastValue:'—',     lastDate:'',      unit:'',
+     desc:'결정 3주 후 공개. 위원들 세부 논의 확인. 다음 회의 스탠스 예측에 활용. 소수의견 위원 발언 주목.'},
+    /* 주택지표 */
+    {name:'NAHB 주택시장지수',          category:'주택지표',   time:'17:00', importance:'medium', mustSee:true,
+     lastValue:'47',    lastDate:'25.02', unit:'pt',
+     desc:'신규주택 건설업체 체감경기. 50 이하=비관. 금리 민감도 높아 모기지금리 변화 즉시 반영. 향후 공급 감소 예고 지표.'},
+    {name:'신규주택착공건수',           category:'주택지표',   time:'21:30', importance:'medium', mustSee:true,
+     lastValue:'1.366M',lastDate:'25.01', unit:'연율',
+     desc:'건설경기·고용(건설직) 선행지표. 금리 민감도 높아 통화정책 효과 측정 지표로 활용. 착공 vs 허가 괴리 주목.'},
+    {name:'기존주택판매',               category:'주택지표',   time:'23:00', importance:'medium', mustSee:true,
+     lastValue:'4.08M', lastDate:'25.01', unit:'연율',
+     desc:'주택거래 70% 차지. 높은 모기지금리에 의한 공급 잠금(lock-in) 효과로 역사적 저점. 재고 증가 시 가격 조정 신호.'},
+    /* 에너지 */
+    {name:'원유재고 (EIA 주간)',        category:'에너지',     time:'23:30', importance:'medium', mustSee:false,
+     lastValue:'+4.07M',lastDate:'25.02', unit:'배럴',
+     desc:'WTI 가격에 즉각 영향. 예상 대비 재고 증가=공급과잉→유가↓→에너지주↓. 쿠싱 재고·수입량 함께 확인.'},
   ],
+
   KOR: [
-    {name:'한국은행 기준금리 결정', time:'10:00', importance:'high'},
-    {name:'수출입 동향',            time:'09:00', importance:'medium'},
-    {name:'소비자물가지수 (CPI)',   time:'08:00', importance:'medium'},
-    {name:'경상수지',               time:'08:00', importance:'low'},
+    /* 핵심 매크로 */
+    {name:'달러/원 환율 (USD/KRW)',     category:'핵심 매크로', time:'상시',  importance:'high',   mustSee:true,
+     lastValue:'1,458', lastDate:'25.03', unit:'원',
+     desc:'한국 증시·채권의 외국인 투자 바로미터. 1,400 이상=원화 약세→수출주 유리·수입물가 상승. 외인 순매도와 환율 동반 급등 주의.'},
+    {name:'D램/낸드 고정거래가격',      category:'핵심 매크로', time:'월중',  importance:'high',   mustSee:true,
+     lastValue:'DDR5 8Gb $2.10', lastDate:'25.02', unit:'',
+     desc:'삼성전자·SK하이닉스 실적의 직접 결정 변수. 가격 상승=반도체 업종 강력한 매수 시그널. TrendForce 월간 집계 기준.'},
+    {name:'삼성전자/SK하이닉스 실적 가이던스', category:'핵심 매크로', time:'분기', importance:'high', mustSee:true,
+     lastValue:'삼성 Q4 OI 6.5조', lastDate:'25.01', unit:'',
+     desc:'코스피 시가총액 30%↑ 차지. HBM 수요·AI서버 투자 트렌드 반영. 반도체 사이클 및 코스피 방향성 판단 핵심.'},
+    /* 경기지표 */
+    {name:'월간 수출입 동향',           category:'경기지표',   time:'09:00', importance:'high',   mustSee:true,
+     lastValue:'+11.4%',lastDate:'25.02', unit:'YoY',
+     desc:'수출=한국 경제의 심장박동. 반도체 수출 비중 20%. 대미·대중 수출 분리 분석 필수. 반도체 증감률이 코스피 방향성 선행.'},
+    /* 물가지표 */
+    {name:'CPI (소비자물가동향)',        category:'물가지표',   time:'08:00', importance:'high',   mustSee:true,
+     lastValue:'2.2%',  lastDate:'25.01', unit:'YoY',
+     desc:'한국은행 목표 2.0%. 근원물가(식품·에너지 제외) 추이가 금통위 금리결정 방향 결정. 서비스 물가 끈적임 지속 여부 주목.'},
+    /* 금리결정 */
+    {name:'한국은행 금통위',            category:'금리결정',   time:'09:00', importance:'high',   mustSee:true,
+     lastValue:'3.00%', lastDate:'25.01', unit:'',
+     desc:'연 8회 개최. 기준금리 결정 및 경제전망 발표. 환율·가계부채·수출 삼각 균형 고려. 총재 기자회견 문구 변화 주목.'},
+    /* 고용·소비·심리 */
+    {name:'경기활동인구조사 (실업률)',  category:'고용지표',   time:'08:00', importance:'medium', mustSee:false,
+     lastValue:'2.9%',  lastDate:'25.01', unit:'%',
+     desc:'체감실업률(확장실업률)이 공식 실업률보다 실질 고용 상황 반영. 청년실업률 별도 주목. 내수 소비 선행지표.'},
+    {name:'소비자심리지수 (CCSI)',       category:'소비자심리', time:'08:00', importance:'medium', mustSee:false,
+     lastValue:'92.7',  lastDate:'25.02', unit:'pt',
+     desc:'100 기준선 이상=낙관. 국내 소비 및 내수주 전망 선행지표. 경기·고용·자산가격 체감의 종합 바로미터.'},
+    {name:'KB주택가격동향',             category:'주택지표',   time:'월중',  importance:'medium', mustSee:false,
+     lastValue:'서울 -0.01%', lastDate:'25.02', unit:'MoM',
+     desc:'가계부채·금융안정과 직결. 한국은행 금리결정 시 주택가격도 주요 고려 변수. 서울·수도권 분리 파악 중요.'},
   ],
+
   CHN: [
-    {name:'소비자물가지수 (CPI)',   time:'10:30', importance:'high'},
-    {name:'무역수지',               time:'10:30', importance:'high'},
-    {name:'생산자물가지수 (PPI)',   time:'10:30', importance:'medium'},
-    {name:'산업생산 (YoY)',         time:'10:00', importance:'medium'},
+    /* 핵심 매크로 */
+    {name:'달러/위안화 환율 (USD/CNY)', category:'핵심 매크로', time:'상시',  importance:'high',   mustSee:true,
+     lastValue:'7.28',  lastDate:'25.03', unit:'',
+     desc:'인민은행 기준환율 고시로 관리. 7.3 돌파=위안화 약세 심화→자본유출 우려. 외자 이탈 및 수출 경쟁력 동시 측정 지표.'},
+    {name:'외환보유액',                  category:'핵심 매크로', time:'09:00', importance:'high',   mustSee:true,
+     lastValue:'$3,202B',lastDate:'25.01', unit:'',
+     desc:'3조달러=심리적 마지노선. 급감 시 위안화 방어 능력 약화 시그널. 달러 표시 국채 보유 비중도 주목.'},
+    /* 경기·소비 */
+    {name:'GDP 성장률 (분기)',           category:'경기지표',   time:'10:00', importance:'high',   mustSee:true,
+     lastValue:'5.4%',  lastDate:'24.Q4', unit:'YoY',
+     desc:'중국 정부 목표 5.0% 대비 달성 여부. 부동산 침체 속 소비·수출 성장 견인 구조 주목. 실질 vs 공식 수치 괴리 논란 상존.'},
+    {name:'사회소비품 소매총액',         category:'소비지표',   time:'10:00', importance:'high',   mustSee:true,
+     lastValue:'+3.7%', lastDate:'25.01', unit:'YoY',
+     desc:'내수 회복 속도 측정. 정부 소비 부양책 효과 확인 지표. 춘절 효과 제거 후 추세 파악 중요. 온라인 소매 비중 급증 추세.'},
+    {name:'사회융자총량 (TSF)',          category:'금융지표',   time:'부정기', importance:'medium', mustSee:true,
+     lastValue:'¥7.06T',lastDate:'25.01', unit:'월간',
+     desc:'실물경제 공급 총 유동성. 은행대출+채권+그림자금융 포함. 경기부양 강도 측정 핵심. 증가 둔화=신용 수축 경고.'},
+    /* 물가 */
+    {name:'CPI (소비자물가지수)',        category:'물가지표',   time:'09:30', importance:'high',   mustSee:true,
+     lastValue:'+0.5%', lastDate:'25.01', unit:'YoY',
+     desc:'디플레이션 압력 지속 여부 확인. 0% 이하=디플레→추가 경기부양 기대→A주·원자재↑. 돼지고기 가격 변동성 제거 후 추세 주목.'},
+    {name:'PPI (생산자물가지수)',        category:'물가지표',   time:'09:30', importance:'high',   mustSee:true,
+     lastValue:'-2.3%', lastDate:'25.01', unit:'YoY',
+     desc:'글로벌 인플레이션 선행지표. 마이너스 지속=중국발 디스인플레이션 수출→신흥국 수입물가↓. 철강·화학·에너지 부문별 분해 필수.'},
+    /* 제조업 */
+    {name:'차이신 제조업 PMI',          category:'제조업지표', time:'09:45', importance:'high',   mustSee:true,
+     lastValue:'50.9',  lastDate:'25.02', unit:'pt',
+     desc:'민간 중소기업 중심. 관방 PMI보다 선행성 높음. 50 이상=제조업 확장→원자재 수요 증가. 수출 신규주문 세부항목이 글로벌 무역 선행.'},
+    {name:'차이신 서비스업 PMI',        category:'비제조업',   time:'09:45', importance:'medium', mustSee:false,
+     lastValue:'51.4',  lastDate:'25.02', unit:'pt',
+     desc:'서비스·소비 회복 모니터링. 제조업 PMI와 함께 복합 PMI 산출. 50선 상회 지속 여부가 내수 회복 판단 기준.'},
+    {name:'대출우대금리 LPR',           category:'금리결정',   time:'09:15', importance:'high',   mustSee:true,
+     lastValue:'3.10%', lastDate:'25.02', unit:'1년물',
+     desc:'기업 대출 기준금리. 인하=유동성 공급 확대→A주↑ 위안화↓. 인민은행 MLF 금리와 연동. 5년물 LPR은 모기지 기준.'},
+    {name:'70개 도시 주택가격지수',     category:'주택지표',   time:'09:30', importance:'medium', mustSee:false,
+     lastValue:'-0.1%', lastDate:'25.01', unit:'MoM',
+     desc:'부동산 침체 회복 여부. 안정화=자산효과 회복→소비 개선 기대. 1선도시(베이징·상하이) vs 3선도시 차별화 주목.'},
   ],
-  JPN: [
-    {name:'BOJ 통화정책 결정',      time:'12:00', importance:'high'},
-    {name:'국내총생산 (GDP)',        time:'08:50', importance:'high'},
-    {name:'소비자물가지수 (CPI)',   time:'08:30', importance:'medium'},
-    {name:'무역수지',               time:'08:50', importance:'low'},
-  ],
-  GBR: [
-    {name:'영란은행 금리결정 (BOE)',time:'21:00', importance:'high'},
-    {name:'소비자물가지수 (CPI)',   time:'17:00', importance:'high'},
-    {name:'고용지표 (실업률)',      time:'17:00', importance:'medium'},
-    {name:'소매판매 (MoM)',         time:'17:00', importance:'medium'},
-  ],
-  DEU: [
-    {name:'IFO 기업환경지수',       time:'17:00', importance:'high'},
-    {name:'소비자물가지수 (CPI)',   time:'15:00', importance:'high'},
-    {name:'ZEW 경제심리지수',       time:'18:00', importance:'medium'},
-    {name:'실업률',                 time:'14:55', importance:'medium'},
-  ],
+
   TWN: [
-    {name:'수출 (YoY)',             time:'16:00', importance:'high'},
-    {name:'소비자물가지수 (CPI)',   time:'08:30', importance:'medium'},
-    {name:'산업생산 (YoY)',         time:'16:00', importance:'medium'},
-    {name:'무역수지',               time:'16:00', importance:'low'},
+    /* 핵심 매크로 */
+    {name:'TSMC 월간 매출',             category:'핵심 매크로', time:'16:00', importance:'high',   mustSee:true,
+     lastValue:'NT$278.1B', lastDate:'24.12', unit:'',
+     desc:'글로벌 AI 수요의 직접 지표. YoY 성장률이 반도체·AI 테마주 전체 방향성 결정. 매월 10일경 발표. CoWoS 패키징 수요 특히 주목.'},
+    {name:'대만 수출수주동향',           category:'핵심 매크로', time:'16:00', importance:'high',   mustSee:true,
+     lastValue:'+9.8%', lastDate:'25.01', unit:'YoY',
+     desc:'전방산업(AI서버·스마트폰·PC) 수요 선행지표. 정보통신 수주=AI 투자 사이클 바로미터. 대미·대중 수주 비중 변화 주목.'},
+    /* 경기 */
+    {name:'수출 (YoY)',                  category:'경기지표',   time:'16:00', importance:'high',   mustSee:true,
+     lastValue:'+9.6%', lastDate:'25.01', unit:'YoY',
+     desc:'반도체·패널·기계 수출 비중 높음. 대미·대중 비중 분석→지정학 리스크 영향 측정. 수출수주 대비 실제 수출 갭이 재고 사이클 반영.'},
+    {name:'차이신 대만 제조업 PMI',     category:'제조업지표', time:'09:45', importance:'medium', mustSee:false,
+     lastValue:'51.1',  lastDate:'25.02', unit:'pt',
+     desc:'대만 제조업 경기 선행지표. 반도체·전자 비중이 높아 글로벌 테크 사이클과 동행. 신규수출주문 세부항목 주목.'},
+  ],
+
+  JPN: [
+    /* 핵심 매크로 */
+    {name:'달러/엔 환율 (USD/JPY)',     category:'핵심 매크로', time:'상시',  importance:'high',   mustSee:true,
+     lastValue:'153.7', lastDate:'25.03', unit:'엔',
+     desc:'캐리트레이드 청산 바로미터. 엔화 급등(달러 급락)=글로벌 위험자산 매도 신호. 150선 이탈 시 BOJ 개입 가능성 주목.'},
+    {name:'10년물 일본 국채(JGB) 금리', category:'핵심 매크로', time:'상시',  importance:'high',   mustSee:true,
+     lastValue:'1.05%', lastDate:'25.03', unit:'%',
+     desc:'BOJ YCC 정책 변화의 핵심. 급등 시 BOJ 개입 또는 통화정책 정상화 시그널→엔화 강세. 글로벌 채권 시장 영향 파급.'},
+    /* 금리결정 */
+    {name:'BOJ 정책금리 결정',          category:'금리결정',   time:'미정',  importance:'high',   mustSee:true,
+     lastValue:'0.25%', lastDate:'25.01', unit:'',
+     desc:'연 8회 개최. 마이너스 금리 탈출 후 추가 인상 경로가 글로벌 캐리트레이드에 직접 영향. 우에다 총재 발언 문구 변화 주목.'},
+    /* 물가 */
+    {name:'전국 Core CPI (식품 제외)',  category:'물가지표',   time:'08:30', importance:'high',   mustSee:true,
+     lastValue:'3.0%',  lastDate:'25.01', unit:'YoY',
+     desc:'BOJ 목표 2% 초과 지속=추가 금리인상 근거 강화. 신선식품·에너지 동시 제외한 근원물가도 병행 확인.'},
+    /* 경기 */
+    {name:'단칸 대형제조업 업황판단',   category:'경기지표',   time:'08:50', importance:'high',   mustSee:true,
+     lastValue:'+13',   lastDate:'24.Q4', unit:'DI',
+     desc:'분기 발표. 기업 체감경기 집약. 플러스=낙관 우세. BOJ 금리결정 핵심 선행지표. 설비투자 계획도 함께 발표.'},
+    {name:'GDP (국내총생산)',           category:'경기지표',   time:'08:50', importance:'medium', mustSee:false,
+     lastValue:'+1.2%', lastDate:'24.Q3', unit:'QoQ연율',
+     desc:'소비·투자·수출 분해. 실질임금 상승과 소비 회복 여부가 BOJ 정상화 속도 결정. 잠정치와 수정치 간 갭 주목.'},
+    {name:'완전실업률 / 유효구인배율', category:'고용지표',   time:'08:30', importance:'medium', mustSee:false,
+     lastValue:'2.4% / 1.24배', lastDate:'24.12', unit:'',
+     desc:'구인배율 1.0 이상=노동시장 타이트. 임금 상승→인플레이션 지속→BOJ 인상 압력. 파트타임 포함 여부 주의.'},
+    {name:'공작기계수주',               category:'기타지표',   time:'14:00', importance:'medium', mustSee:true,
+     lastValue:'-6.9%', lastDate:'25.01', unit:'YoY',
+     desc:'글로벌 설비투자 선행지표. 제조업 자동화·반도체 장비 수주 포함. 글로벌 CapEx 사이클 판단. 중국·아시아 수주 비중 주목.'},
+  ],
+
+  DEU: [
+    /* 핵심 매크로 */
+    {name:'10년물 독일 국채(Bund) 금리', category:'핵심 매크로', time:'상시', importance:'high',  mustSee:true,
+     lastValue:'2.37%', lastDate:'25.03', unit:'%',
+     desc:'유로존 무위험 기준금리. 이탈리아-독일 스프레드 확대=유로존 재정위기 우려 바로미터. ECB 금리 기대와 연동.'},
+    {name:'TTF 천연가스 선물 (네덜란드)', category:'핵심 매크로', time:'상시', importance:'high', mustSee:true,
+     lastValue:'€47.8/MWh', lastDate:'25.03', unit:'',
+     desc:'유럽 에너지 위기 핵심 지표. 급등 시 독일·유럽 제조업 경쟁력 직접 타격→유로↓. 러-우 전쟁 및 LNG 공급망과 직결.'},
+    /* 경기 */
+    {name:'IFO 기업환경지수',           category:'경기지표',   time:'10:00', importance:'high',   mustSee:true,
+     lastValue:'85.1',  lastDate:'25.02', unit:'pt',
+     desc:'독일 기업 체감경기. 현황+기대 세부지수 분리 분석. 기대지수 반등=경기 바닥 신호. 제조업·건설·무역 부문별 분해.'},
+    {name:'ZEW 경제심리지수',           category:'경기지표',   time:'11:00', importance:'high',   mustSee:true,
+     lastValue:'+26.0', lastDate:'25.02', unit:'pt',
+     desc:'금융전문가 경기기대 서베이. 0선 위=낙관. 선행성 높아 유럽 증시 방향성 선도. 현황평가 지수가 더 느린 실제 경기 반영.'},
+    {name:'GDP (국내총생산)',           category:'경기지표',   time:'08:00', importance:'medium', mustSee:false,
+     lastValue:'-0.2%', lastDate:'24.Q3', unit:'QoQ',
+     desc:'2분기 연속 마이너스로 기술적 경기침체 진입. 제조업 침체·에너지 비용·중국 수요 약화 삼중고. 수출 비중 45% 수준.'},
+    /* 제조업·물가 */
+    {name:'HCOB 독일 제조업 PMI',      category:'제조업지표', time:'09:30', importance:'high',   mustSee:true,
+     lastValue:'44.1',  lastDate:'25.02', unit:'pt',
+     desc:'독일 제조업 침체 깊이 측정. 45 이하 장기화=유럽 경기침체 우려 심화. 자동차·화학 비중 높음. 신규수출주문 특히 주목.'},
+    {name:'PPI (생산자물가지수)',       category:'물가지표',   time:'08:00', importance:'medium', mustSee:true,
+     lastValue:'-0.1%', lastDate:'25.01', unit:'YoY',
+     desc:'에너지 가격과 연동. 마이너스=디스인플레이션 신호→ECB 금리인하 여지 확대. 기업 마진 압박 측정 지표.'},
+    {name:'소비자물가지수 (CPI)',       category:'물가지표',   time:'08:00', importance:'medium', mustSee:false,
+     lastValue:'2.3%',  lastDate:'25.02', unit:'YoY',
+     desc:'유로존 HICP 선행지표. 독일 물가 안정=ECB 금리인하 여지 확대. 에너지·식품 제외 근원물가 추이 병행 확인.'},
+    {name:'GfK 소비자신뢰지수',        category:'소비자심리', time:'08:00', importance:'medium', mustSee:false,
+     lastValue:'-22.4', lastDate:'25.02', unit:'pt',
+     desc:'독일 소비 경기 온도계. 마이너스 장기화=내수 위축→경기침체 리스크. 소득 기대·저축 성향 세부항목 주목.'},
+  ],
+
+  GBR: [
+    /* 핵심 매크로 */
+    {name:'파운드/달러 환율 (GBP/USD)', category:'핵심 매크로', time:'상시', importance:'high',  mustSee:true,
+     lastValue:'1.263', lastDate:'25.03', unit:'',
+     desc:'브렉시트 영향 및 BOE 금리정책 반영. 달러 강세기엔 1.20 지지선 주목. 재정 우려 시 Gilt 매도와 동반 약세 패턴.'},
+    {name:'10년물 영국 국채(Gilt) 금리', category:'핵심 매크로', time:'상시', importance:'high', mustSee:true,
+     lastValue:'4.55%', lastDate:'25.03', unit:'%',
+     desc:'재정 우려 시 급등. Gilt 매도(금리 급등)=파운드↓→BOE 긴급 개입 사례(2022년 트러스 쇼크) 참조. 재정 건전성 바로미터.'},
+    /* 물가·금리 */
+    {name:'CPI (소비자물가지수)',        category:'물가지표',   time:'07:00', importance:'high',   mustSee:true,
+     lastValue:'2.5%',  lastDate:'25.01', unit:'YoY',
+     desc:'BOE 목표 2%. 서비스 물가 끈적임이 금리인하 속도를 제약. 근원 서비스 CPI(~5%)가 진짜 인플레 압력 측정치.'},
+    {name:'BOE 기준금리 결정 (MPC)',    category:'금리결정',   time:'12:00', importance:'high',   mustSee:true,
+     lastValue:'4.75%', lastDate:'25.02', unit:'',
+     desc:'연 8회 MPC 회의. 9명 위원 투표 결과(만장일치/분열) 공개. 소수의견 위원 수가 향후 방향 선행지표. 인플레보고서 동반.'},
+    /* 경기·소비 */
+    {name:'소매판매',                    category:'소비지표',   time:'07:00', importance:'medium', mustSee:true,
+     lastValue:'-0.3%', lastDate:'25.01', unit:'MoM',
+     desc:'소비 중심 영국 경제의 핵심 지표. 생활비 위기 해소 속도 측정. 비식품·온라인 판매 비중 변화도 구조적 트렌드 반영.'},
+    {name:'GDP (국내총생산)',           category:'경기지표',   time:'07:00', importance:'medium', mustSee:false,
+     lastValue:'+0.1%', lastDate:'24.Q3', unit:'QoQ',
+     desc:'서비스업 비중 80% 이상. 제조업 부진 속 서비스 소비가 성장 견인. 스태그플레이션(저성장+고물가) 리스크 상존.'},
+    {name:'S&P 글로벌 UK 서비스업 PMI', category:'비제조업',  time:'09:30', importance:'medium', mustSee:false,
+     lastValue:'50.8',  lastDate:'25.02', unit:'pt',
+     desc:'GDP 핵심인 서비스업 선행지표. 50선 유지 여부가 경기침체 회피 관건. 고용·미결주문 세부항목 주목.'},
   ],
 };
 
@@ -1051,19 +1368,23 @@ function onCountryHover(ev, d, el, tipId) {
 
     let evHtml = '';
     if (result && result.items && result.items.length > 0) {
-      evHtml = '<div class="mt-events">' + result.items.slice(0,4).map(item => {
+      // 툴팁에는 mustSee 지표만 표시 (최대 5개)
+      const mustItems = result.items.filter(it => it.mustSee).slice(0, 5);
+      const showItems = mustItems.length > 0 ? mustItems : result.items.slice(0, 4);
+      evHtml = '<div class="mt-events">' + showItems.map(item => {
         const dot = item.importance === 'high' ? '<span style="color:var(--high)">●</span>'
                   : item.importance === 'medium' ? '<span style="color:var(--mid)">●</span>'
                   : '<span style="color:var(--low)">●</span>';
-        const timeStr = item.time ? `<span class="mt-ev-time">(${item.time})</span>` : '';
+        const valStr = item.lastValue && item.lastValue !== '—'
+          ? `<span class="mt-ev-val">${item.lastValue}</span>` : '';
         return `<div class="mt-ev">
           <span class="mt-ev-dot">${dot}</span>
           <span class="mt-ev-name">${item.name}</span>
-          ${timeStr}
+          ${valStr}
         </div>`;
       }).join('') + '</div>';
       evHtml += `<div style="margin-top:5px;padding:4px 6px;background:rgba(255,170,0,.07);border:1px solid rgba(255,170,0,.2);border-radius:5px;font-size:8px;color:var(--mid);line-height:1.5;">
-        ⚠️ 시간은 통상값 / 정확한 날짜는 캘린더뷰 참조
+        ⚠️ 최근 발표치 참고값 · 국가 클릭 시 전체 지표
       </div>`;
     } else {
       evHtml = '<div class="mt-loading" style="margin-top:4px;">이번주 주요 일정 없음</div>';
@@ -1080,49 +1401,88 @@ function onCountryLeave(tipId) {
 }
 
 /* ══ MAP CLICK — RIGHT PANEL INVESTMENT STRATEGY ══ */
+/* 인디케이터 카드 토글 */
+function toggleIndCard(el) {
+  el.closest('.ind-card').classList.toggle('open');
+}
+
 function onCountryClick(iso3) {
   const c = CMAP[iso3];
   const countryName = c ? `${c.flag} ${c.name}` : iso3;
 
-  // Update right panel header
   const titleEl = document.getElementById('rp-title');
-  titleEl.textContent = `${countryName} — 이번주 투자전략`;
+  titleEl.textContent = `${countryName} — 주요 경제지표`;
   titleEl.classList.remove('ph');
 
-  // Show loading state
   const resultArea = document.getElementById('ai-result-area');
   const result = getWeeklyIndicators(iso3);
 
   if (!result || !result.items || result.items.length === 0) {
-    resultArea.innerHTML = `<div style="text-align:center;padding:20px;color:var(--dimmer);font-size:11px;">이번주 주요 경제지표 일정이 없습니다.</div>`;
+    resultArea.innerHTML = `<div style="text-align:center;padding:20px;color:var(--dimmer);font-size:11px;">등록된 지표가 없습니다.</div>`;
     return;
   }
 
   const {items} = result;
-  const impLabel = {high:'🔴 높음', medium:'🟡 중간', low:'🟢 낮음'};
 
-  const cardList = items.map(ev => {
-    const impColor = ev.importance === 'high' ? 'var(--high)' : ev.importance === 'medium' ? 'var(--mid)' : 'var(--low)';
-    return `<div class="strat-card">
-      <div class="sc-top">
-        <div class="sc-info">
-          <div class="sc-name">${ev.name}</div>
-          <div class="sc-time">${ev.time ? ev.time + ' KST · ' : ''}${impLabel[ev.importance] || ev.importance}</div>
-        </div>
-        <span style="color:${impColor};font-size:16px;flex-shrink:0;">●</span>
-      </div>
-    </div>`;
-  }).join('');
+  // 카테고리별 그룹화
+  const groups = {};
+  items.forEach(item => {
+    const cat = item.category || '기타';
+    if (!groups[cat]) groups[cat] = [];
+    groups[cat].push(item);
+  });
 
-  // 클릭 시 프롬프트 복사 + Perplexity 열기
-  const _promptEncoded = encodeURIComponent(buildCountryPrompt(countryName, items));
+  const impDot = imp => imp === 'high'
+    ? '<span style="color:var(--high)">●</span>'
+    : imp === 'medium'
+    ? '<span style="color:var(--mid)">●</span>'
+    : '<span style="color:var(--low)">●</span>';
+
+  let cardsHtml = '';
+  Object.entries(groups).forEach(([cat, catItems]) => {
+    cardsHtml += `<div class="ind-cat-head">${cat}</div>`;
+    catItems.forEach((item, idx) => {
+      const cardId = `ic-${iso3}-${cat.replace(/\s/g,'')}-${idx}`;
+      const mustClass = item.mustSee ? ' must-see' : '';
+      const mustBadge = item.mustSee ? '<span class="ind-must-badge">필수</span>' : '';
+      const valHtml = item.lastValue && item.lastValue !== '—'
+        ? `<span class="ind-last-val">${item.lastValue}</span>` : '';
+      const timeHtml = item.time && item.time !== '상시' && item.time !== '부정기' && item.time !== '미정' && item.time !== '월중' && item.time !== '분기'
+        ? `<span class="ind-time">${item.time}</span>` : '';
+      const descHtml = item.desc ? `
+        <div class="ind-card-body">
+          <div class="ind-card-desc">
+            ${item.desc}
+            ${item.lastValue && item.lastValue !== '—' ? `
+            <div class="ind-last-row">
+              <span>최근 발표치</span>
+              <span class="ind-last-row-val">${item.lastValue}${item.unit ? ' ' + item.unit : ''}</span>
+              ${item.lastDate ? `<span>(${item.lastDate})</span>` : ''}
+            </div>` : ''}
+          </div>
+        </div>` : '';
+      cardsHtml += `
+        <div class="ind-card${mustClass}" id="${cardId}">
+          <div class="ind-card-top" onclick="toggleIndCard(this)">
+            <span class="ind-imp-dot">${impDot(item.importance)}</span>
+            <span class="ind-name">${item.name}</span>
+            ${mustBadge}
+            ${valHtml}
+            ${timeHtml}
+            ${item.desc ? '<span class="ind-toggle-arrow">▼</span>' : ''}
+          </div>
+          ${descHtml}
+        </div>`;
+    });
+  });
+
   resultArea.innerHTML = `
-    <div style="background:rgba(255,170,0,.06);border:1px solid rgba(255,170,0,.15);border-radius:7px;padding:8px 11px;font-size:10px;color:var(--mid);margin-bottom:10px;">
-      ⚠️ 시간은 통상값 · 정확한 날짜는 캘린더뷰(Investing.com) 참조
+    <div style="background:rgba(255,170,0,.06);border:1px solid rgba(255,170,0,.15);border-radius:7px;padding:7px 10px;font-size:9px;color:var(--mid);margin-bottom:8px;line-height:1.6;">
+      ⚠️ 최근 발표치는 참고값 (실시간 아님) · 정확한 일정은 캘린더뷰 참조
     </div>
-    <div class="rp-section-head"><span class="rp-section-label">이번주 주요 지표</span><div class="rp-section-line"></div></div>
-    ${cardList}
-    <button class="pplx-open-btn" onclick="openPerplexityWithCountry('${iso3}','${encodeURIComponent(countryName)}')">
+    <div class="rp-section-head"><span class="rp-section-label">주요 지표 <span style="color:var(--dimmer);font-size:8px;">▼ 클릭하여 특징 펼치기</span></span><div class="rp-section-line"></div></div>
+    ${cardsHtml}
+    <button class="pplx-open-btn" style="margin-top:14px;" onclick="openPerplexityWithCountry('${iso3}','${encodeURIComponent(countryName)}')">
       🔍 Perplexity에서 투자전략 분석하기
     </button>`;
 }
