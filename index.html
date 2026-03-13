@@ -9,22 +9,22 @@
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600;700&family=Noto+Sans+KR:wght@300;400;500;700&display=swap" rel="stylesheet">
 <style>
 :root {
-  --bg: #05080f;
-  --s1: #0a1220;
-  --s2: #0f1a2e;
-  --s3: #162035;
-  --border: #1c2d44;
-  --border2: #263d58;
-  --accent: #00e5ff;
-  --a2: #ff5c38;
-  --a3: #39ffa0;
-  --a4: #ffcc00;
-  --text: #ddeeff;
-  --dim: #5a7a9a;
-  --dimmer: #2a3f55;
-  --high: #ff3355;
-  --mid: #ffaa00;
-  --low: #22cc66;
+  --bg: #f0f3f8;
+  --s1: #f7f8fc;
+  --s2: #edf0f6;
+  --s3: #e3e7f1;
+  --border: #d2d8e8;
+  --border2: #bac4d6;
+  --accent: #1555a8;
+  --a2: #d42b1e;
+  --a3: #1a8060;
+  --a4: #d46800;
+  --text: #1a2638;
+  --dim: #4a5e76;
+  --dimmer: #8a9db8;
+  --high: #b71c1c;
+  --mid: #c85000;
+  --low: #276d35;
 }
 * { margin: 0; padding: 0; box-sizing: border-box; }
 html, body { height: 100%; overflow: hidden; }
@@ -36,10 +36,6 @@ body {
   flex-direction: column;
   transition: filter .3s;
 }
-body.bw-mode {
-  filter: grayscale(100%) contrast(1.08);
-}
-
 /* ── HEADER ─────────────────────────────────────────── */
 header {
   display: flex;
@@ -48,10 +44,11 @@ header {
   padding: 0 20px;
   height: 54px;
   border-bottom: 1px solid var(--border);
-  background: rgba(10, 18, 32, 0.98);
+  background: rgba(247, 248, 252, 0.98);
   backdrop-filter: blur(12px);
   flex-shrink: 0;
   z-index: 100;
+  box-shadow: 0 1px 4px rgba(0,0,0,.07);
 }
 
 .brand {
@@ -115,32 +112,8 @@ header {
 }
 .vtab.on {
   background: var(--accent);
-  color: #000;
-  font-weight: 700;
-}
-
-/* B&W Toggle Button */
-.bw-toggle {
-  display: flex;
-  align-items: center;
-  gap: 5px;
-  padding: 5px 12px;
-  border-radius: 9px;
-  border: 1px solid var(--border);
-  background: var(--s2);
-  color: var(--dim);
-  font-size: 11px;
-  cursor: pointer;
-  font-family: 'Noto Sans KR', sans-serif;
-  transition: all .2s;
-  white-space: nowrap;
-  flex-shrink: 0;
-}
-.bw-toggle:hover { border-color: var(--border2); color: var(--text); }
-.bw-toggle.on {
-  background: rgba(255,255,255,.08);
-  border-color: rgba(255,255,255,.35);
   color: #fff;
+  font-weight: 700;
 }
 
 /* Country filter pills */
@@ -177,7 +150,7 @@ header {
 }
 .cpill:hover { border-color: var(--border2); color: var(--text); }
 .cpill.on {
-  background: rgba(0, 229, 255, 0.1);
+  background: rgba(21, 85, 168, 0.1);
   border-color: var(--accent);
   color: var(--accent);
 }
@@ -211,7 +184,7 @@ header {
   flex-shrink: 0;
   position: relative;
   overflow: hidden;
-  background: radial-gradient(ellipse at 50% 60%, #081828 0%, var(--bg) 80%);
+  background: radial-gradient(ellipse at 50% 60%, #c8d8f0 0%, var(--s1) 80%);
   border-bottom: 1px solid var(--border);
 }
 #world-map { width: 100%; height: 100%; }
@@ -226,7 +199,7 @@ header {
 /* Map tooltip */
 .mtip {
   position: absolute;
-  background: rgba(10,18,32,.97);
+  background: rgba(247,248,252,.98);
   border: 1px solid var(--accent);
   border-radius: 7px;
   padding: 7px 11px;
@@ -235,7 +208,7 @@ header {
   transition: opacity .12s;
   z-index: 50;
   font-size: 10px;
-  box-shadow: 0 0 14px rgba(0,229,255,.15);
+  box-shadow: 0 4px 16px rgba(0,0,0,.14);
   max-width: 260px;
 }
 .mtip.show { opacity: 1; }
@@ -247,7 +220,7 @@ header {
   align-items: flex-start;
   gap: 5px;
   padding: 3px 0;
-  border-top: 1px solid rgba(255,255,255,.05);
+  border-top: 1px solid rgba(0,0,0,.07);
   font-size: 9px;
   line-height: 1.4;
 }
@@ -255,7 +228,7 @@ header {
 .mt-ev-name { color: var(--text); flex: 1; }
 .mt-ev-time { color: var(--dimmer); font-family: 'IBM Plex Mono', monospace; white-space: nowrap; }
 .mt-loading { color: var(--dimmer); font-size: 9px; font-style: italic; }
-.mt-ev-val { color: #20c4a4; font-family: 'IBM Plex Mono', monospace; font-size: 8px; white-space: nowrap; margin-left: auto; padding-left: 4px; }
+.mt-ev-val { color: #007a60; font-family: 'IBM Plex Mono', monospace; font-size: 8px; white-space: nowrap; margin-left: auto; padding-left: 4px; }
 
 /* ── Indicator toggle cards (right panel) ── */
 .ind-cat-head {
@@ -264,25 +237,26 @@ header {
   gap: 6px;
   font-size: 8px;
   letter-spacing: 1.5px;
-  color: var(--dimmer);
+  color: var(--dim);
   font-family: 'IBM Plex Mono', monospace;
   text-transform: uppercase;
   margin: 12px 0 5px;
   padding-bottom: 4px;
-  border-bottom: 1px solid rgba(255,255,255,.06);
+  border-bottom: 1px solid rgba(0,0,0,.1);
 }
 .ind-cat-head:first-of-type { margin-top: 4px; }
 .ind-card {
-  background: rgba(255,255,255,.03);
-  border: 1px solid rgba(255,255,255,.07);
+  background: #fff;
+  border: 1px solid rgba(0,0,0,.09);
   border-radius: 8px;
   margin-bottom: 5px;
   overflow: hidden;
   transition: border-color .15s;
+  box-shadow: 0 1px 3px rgba(0,0,0,.04);
 }
 .ind-card.must-see {
-  border-color: rgba(255,170,0,.25);
-  background: rgba(255,170,0,.03);
+  border-color: rgba(180,80,0,.25);
+  background: rgba(255,240,220,.25);
 }
 .ind-card-top {
   display: flex;
@@ -292,7 +266,7 @@ header {
   cursor: pointer;
   user-select: none;
 }
-.ind-card-top:hover { background: rgba(255,255,255,.03); }
+.ind-card-top:hover { background: rgba(0,0,0,.025); }
 .ind-imp-dot { font-size: 7px; flex-shrink: 0; }
 .ind-name {
   flex: 1;
@@ -300,13 +274,14 @@ header {
   color: var(--text);
   line-height: 1.3;
 }
-.ind-card.must-see .ind-name { color: #fff; }
+.ind-card.must-see .ind-name { color: var(--text); }
 .ind-last-val {
   font-family: 'IBM Plex Mono', monospace;
   font-size: 9px;
-  color: #20c4a4;
+  color: #007a60;
   white-space: nowrap;
   flex-shrink: 0;
+  font-weight: 600;
 }
 .ind-time {
   font-family: 'IBM Plex Mono', monospace;
@@ -333,8 +308,9 @@ header {
   font-size: 10px;
   color: var(--dim);
   line-height: 1.65;
-  border-top: 1px solid rgba(255,255,255,.06);
+  border-top: 1px solid rgba(0,0,0,.08);
   padding-top: 7px;
+  background: rgba(0,0,0,.015);
 }
 .ind-last-row {
   display: flex;
@@ -345,16 +321,17 @@ header {
   color: var(--dimmer);
   font-family: 'IBM Plex Mono', monospace;
 }
-.ind-last-row-val { color: #20c4a4; font-weight: 600; }
+.ind-last-row-val { color: #007a60; font-weight: 600; }
 .ind-must-badge {
   font-size: 7px;
-  background: rgba(255,170,0,.15);
-  border: 1px solid rgba(255,170,0,.3);
-  color: #ffaa00;
+  background: rgba(200,80,0,.1);
+  border: 1px solid rgba(200,80,0,.3);
+  color: #b84a00;
   border-radius: 3px;
   padding: 1px 4px;
   letter-spacing: 0.5px;
   flex-shrink: 0;
+  font-weight: 600;
 }
 
 /* Country list */
@@ -399,7 +376,7 @@ header {
   border: 1px solid transparent;
 }
 .ci:hover { background: var(--s2); border-color: var(--border); }
-.ci.on { background: rgba(0,229,255,.06); border-color: rgba(0,229,255,.3); }
+.ci.on { background: rgba(21,85,168,.07); border-color: rgba(21,85,168,.35); }
 .ci-check {
   width: 14px; height: 14px;
   border-radius: 3px;
@@ -409,7 +386,7 @@ header {
   font-size: 8px;
   transition: all .15s;
 }
-.ci.on .ci-check { background: var(--accent); border-color: var(--accent); color: #000; }
+.ci.on .ci-check { background: var(--accent); border-color: var(--accent); color: #fff; }
 .ci-flag { font-size: 14px; }
 .ci-name { font-size: 11px; color: var(--dim); flex: 1; transition: color .15s; }
 .ci.on .ci-name { color: var(--accent); }
@@ -477,7 +454,7 @@ header {
   font-family: 'Noto Sans KR', sans-serif;
 }
 .cperiod-btn:hover { border-color: var(--border2); color: var(--text); }
-.cperiod-btn.on { border-color: var(--accent); color: var(--accent); background: rgba(0,229,255,.08); }
+.cperiod-btn.on { border-color: var(--accent); color: var(--accent); background: rgba(21,85,168,.08); }
 
 .source-badge {
   margin-left: auto;
@@ -649,8 +626,8 @@ header {
 .air-name { font-size: 12px; font-weight: 700; color: var(--accent); flex: 1; }
 .air-badge {
   font-size: 8px;
-  background: rgba(0,229,255,.1);
-  border: 1px solid rgba(0,229,255,.2);
+  background: rgba(21,85,168,.1);
+  border: 1px solid rgba(21,85,168,.25);
   color: var(--accent);
   padding: 2px 6px;
   border-radius: 4px;
@@ -685,10 +662,10 @@ header {
   font-weight: 700;
   flex-shrink: 0;
 }
-.scb-매수 { background: rgba(57,255,160,.12); color: var(--a3); border: 1px solid rgba(57,255,160,.3); }
-.scb-매도 { background: rgba(255,92,56,.12); color: var(--a2); border: 1px solid rgba(255,92,56,.3); }
-.scb-중립 { background: rgba(0,229,255,.1); color: var(--accent); border: 1px solid rgba(0,229,255,.2); }
-.scb-관망 { background: rgba(90,122,154,.1); color: var(--dim); border: 1px solid var(--border); }
+.scb-매수 { background: rgba(26,128,96,.1); color: var(--a3); border: 1px solid rgba(26,128,96,.3); }
+.scb-매도 { background: rgba(212,43,30,.1); color: var(--a2); border: 1px solid rgba(212,43,30,.3); }
+.scb-중립 { background: rgba(21,85,168,.1); color: var(--accent); border: 1px solid rgba(21,85,168,.25); }
+.scb-관망 { background: rgba(74,94,118,.08); color: var(--dim); border: 1px solid var(--border); }
 .sc-note { font-size: 10px; color: var(--dim); line-height: 1.7; margin-bottom: 8px; }
 .sc-assets {
   display: flex;
@@ -737,10 +714,10 @@ header {
   font-weight: 700;
   margin-bottom: 8px;
 }
-.sb-매수 { background: rgba(57,255,160,.12); color: var(--a3); border: 1px solid rgba(57,255,160,.3); }
-.sb-매도 { background: rgba(255,92,56,.12); color: var(--a2); border: 1px solid rgba(255,92,56,.3); }
-.sb-중립 { background: rgba(0,229,255,.1); color: var(--accent); border: 1px solid rgba(0,229,255,.2); }
-.sb-관망 { background: rgba(90,122,154,.1); color: var(--dim); border: 1px solid var(--border); }
+.sb-매수 { background: rgba(26,128,96,.1); color: var(--a3); border: 1px solid rgba(26,128,96,.3); }
+.sb-매도 { background: rgba(212,43,30,.1); color: var(--a2); border: 1px solid rgba(212,43,30,.3); }
+.sb-중립 { background: rgba(21,85,168,.1); color: var(--accent); border: 1px solid rgba(21,85,168,.25); }
+.sb-관망 { background: rgba(74,94,118,.08); color: var(--dim); border: 1px solid var(--border); }
 
 .air-section { font-size: 8px; letter-spacing: 2px; color: var(--dimmer); font-family: 'IBM Plex Mono', monospace; margin: 11px 0 5px; text-transform: uppercase; }
 .air-text { font-size: 11px; color: var(--dim); line-height: 1.8; }
@@ -749,14 +726,15 @@ header {
 @keyframes cursor-blink { 0%,100%{opacity:1} 50%{opacity:0} }
 .streaming::after { content:'▋'; color:var(--accent); animation: cursor-blink .8s infinite; font-size:11px; }
 
+/* Map countries (light mode) */
+
 /* Scrollbars */
 ::-webkit-scrollbar { width: 3px; height: 3px; }
 ::-webkit-scrollbar-track { background: transparent; }
 ::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 2px; }
 
-/* Map countries */
-.mc { cursor: pointer; stroke: #1a2d40; stroke-width: .4px; transition: all .15s; }
-.mc:hover { filter: brightness(2); stroke: var(--accent); stroke-width: 1px; }
+.mc { cursor: pointer; stroke: #b8c8d8; stroke-width: .4px; transition: all .15s; }
+.mc:hover { filter: brightness(.88); stroke: var(--accent); stroke-width: 1px; }
 .mc.on { stroke: var(--accent); stroke-width: 1px; }
 
 /* Section divider in right panel */
@@ -784,8 +762,8 @@ header {
 
 /* Perplexity Guide Panel */
 .perplexity-guide {
-  background: linear-gradient(135deg, rgba(32,196,164,.05), rgba(0,160,120,.08));
-  border: 1px solid rgba(32,196,164,.25);
+  background: linear-gradient(135deg, rgba(0,122,96,.05), rgba(0,100,80,.08));
+  border: 1px solid rgba(0,122,96,.2);
   border-radius: 10px;
   padding: 12px 14px;
   margin-bottom: 14px;
@@ -793,7 +771,7 @@ header {
 .gg-title {
   font-size: 9px;
   letter-spacing: 2px;
-  color: #20c4a4;
+  color: #007a60;
   font-family: 'IBM Plex Mono', monospace;
   margin-bottom: 9px;
 }
@@ -807,11 +785,11 @@ header {
 }
 .gg-num {
   width: 16px; height: 16px;
-  background: rgba(32,196,164,.15);
-  border: 1px solid rgba(32,196,164,.35);
+  background: rgba(0,122,96,.12);
+  border: 1px solid rgba(0,122,96,.3);
   border-radius: 50%;
   display: flex; align-items: center; justify-content: center;
-  font-size: 9px; color: #20c4a4;
+  font-size: 9px; color: #007a60;
   font-family: 'IBM Plex Mono', monospace;
   flex-shrink: 0;
 }
@@ -844,7 +822,7 @@ header {
   bottom: 24px;
   left: 50%;
   transform: translateX(-50%) translateY(10px);
-  background: rgba(0,229,255,.15);
+  background: rgba(21,85,168,.1);
   border: 1px solid var(--accent);
   color: var(--accent);
   border-radius: 20px;
@@ -861,6 +839,104 @@ header {
   opacity: 1;
   transform: translateX(-50%) translateY(0);
 }
+
+/* ── Prompt Preview Modal ── */
+.pplx-modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(26,38,56,.45);
+  backdrop-filter: blur(3px);
+  z-index: 2000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity .2s;
+}
+.pplx-modal-overlay.show {
+  opacity: 1;
+  pointer-events: all;
+}
+.pplx-modal {
+  background: var(--s1);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 20px 22px;
+  width: min(580px, 92vw);
+  box-shadow: 0 8px 40px rgba(0,0,0,.18);
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  transform: translateY(8px);
+  transition: transform .2s;
+}
+.pplx-modal-overlay.show .pplx-modal {
+  transform: translateY(0);
+}
+.pplx-modal-title {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.pplx-modal-sub {
+  font-size: 10px;
+  color: var(--dim);
+  line-height: 1.6;
+  background: rgba(21,85,168,.06);
+  border: 1px solid rgba(21,85,168,.15);
+  border-radius: 8px;
+  padding: 8px 12px;
+}
+.pplx-modal-sub strong { color: var(--accent); }
+.pplx-prompt-area {
+  width: 100%;
+  height: 160px;
+  background: var(--s2);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  color: var(--text);
+  font-size: 10px;
+  font-family: 'IBM Plex Mono', monospace;
+  padding: 10px 12px;
+  outline: none;
+  resize: none;
+  line-height: 1.7;
+}
+.pplx-modal-actions {
+  display: flex;
+  gap: 8px;
+}
+.pplx-modal-cancel {
+  flex: 1;
+  padding: 9px;
+  background: var(--s3);
+  border: 1px solid var(--border2);
+  border-radius: 8px;
+  color: var(--dim);
+  font-size: 11px;
+  cursor: pointer;
+  font-family: 'Noto Sans KR', sans-serif;
+  transition: all .15s;
+}
+.pplx-modal-cancel:hover { border-color: var(--accent); color: var(--accent); }
+.pplx-modal-open {
+  flex: 2;
+  padding: 9px;
+  background: linear-gradient(135deg, #0a7a5e, #20c4a4);
+  border: none;
+  border-radius: 8px;
+  color: #fff;
+  font-size: 11px;
+  font-weight: 600;
+  cursor: pointer;
+  font-family: 'Noto Sans KR', sans-serif;
+  transition: all .15s;
+}
+.pplx-modal-open:hover { background: linear-gradient(135deg, #0d9970, #2eddb8); transform: translateY(-1px); }
 </style>
 </head>
 <body>
@@ -881,9 +957,6 @@ header {
     <button class="vtab on" onclick="switchView('calendar',this)">📅 캘린더</button>
     <button class="vtab" onclick="switchView('map',this)">🗺️ 지도뷰</button>
   </div>
-
-  <!-- B&W Toggle -->
-  <button class="bw-toggle" id="bw-btn" onclick="toggleBW()">⬛ 흑백</button>
 
   <div class="hsep"></div>
 
@@ -1025,22 +1098,6 @@ header {
 let activeCountries = new Set(['USA','KOR','CHN','JPN','GBR','DEU']);
 let currentView = 'calendar';
 let bigMapG, bigMapPath;
-let bwMode = false;
-
-/* ══ B&W MODE ══ */
-function toggleBW() {
-  bwMode = !bwMode;
-  const btn = document.getElementById('bw-btn');
-  if (bwMode) {
-    document.body.classList.add('bw-mode');
-    btn.classList.add('on');
-    btn.textContent = '🌈 컬러';
-  } else {
-    document.body.classList.remove('bw-mode');
-    btn.classList.remove('on');
-    btn.textContent = '⬛ 흑백';
-  }
-}
 
 /* ══ CLOCK ══ */
 function updateClock() {
@@ -1492,9 +1549,28 @@ async function openPerplexityWithCountry(iso3, encodedName) {
   const result = getWeeklyIndicators(iso3);
   const items = result?.items || [];
   const prompt = buildCountryPrompt(countryName, items);
-  const copied = await copyToClipboard(prompt);
+
+  // 프롬프트 미리보기 모달 표시 + 클립보드 복사
+  const ta = document.getElementById('pplx-prompt-text');
+  if (ta) {
+    ta.value = prompt;
+    document.getElementById('pplx-overlay').classList.add('show');
+    // 자동 복사 시도
+    await copyToClipboard(prompt);
+    // textarea 자동 선택
+    setTimeout(() => { ta.select(); }, 100);
+  }
+}
+
+function closePplxModal(ev) {
+  if (ev && ev.target !== document.getElementById('pplx-overlay')) return;
+  document.getElementById('pplx-overlay').classList.remove('show');
+}
+
+function confirmOpenPplx() {
+  document.getElementById('pplx-overlay').classList.remove('show');
   openPerplexity();
-  showCopyToast(copied ? `✓ ${countryName} 분석 프롬프트 복사 완료` : '⚠️ 복사 실패 — 수동 복사해주세요');
+  showCopyToast('✓ Perplexity 열림 — Ctrl+V 로 붙여넣기 하세요');
 }
 
 /* ══ COUNTRY FILTER LIST ══ */
@@ -1731,8 +1807,8 @@ async function initMiniMap() {
   const zoom = d3.zoom().scaleExtent([1,5]).on('zoom',e=>miniMapG.attr('transform',e.transform));
   svg.call(zoom);
   miniMapG = svg.append('g');
-  miniMapG.append('path').datum({type:'Sphere'}).attr('fill','#040c18').attr('d',miniMapPath);
-  miniMapG.append('path').datum(d3.geoGraticule()()).attr('fill','none').attr('stroke','#0d2030').attr('stroke-width','.3').attr('d',miniMapPath);
+  miniMapG.append('path').datum({type:'Sphere'}).attr('fill','#d0e0f0').attr('d',miniMapPath);
+  miniMapG.append('path').datum(d3.geoGraticule()()).attr('fill','none').attr('stroke','#b8ccd8').attr('stroke-width','.3').attr('d',miniMapPath);
 
   if (!worldData) await loadWorldData();
   drawMapCountries(miniMapG, miniMapPath, el, 'mtip', true);
@@ -1747,8 +1823,8 @@ async function initBigMap() {
   const zoom = d3.zoom().scaleExtent([1,8]).on('zoom',e=>bigMapG.attr('transform',e.transform));
   svg.call(zoom);
   bigMapG = svg.append('g');
-  bigMapG.append('path').datum({type:'Sphere'}).attr('fill','#040c18').attr('d',bigMapPath);
-  bigMapG.append('path').datum(d3.geoGraticule()()).attr('fill','none').attr('stroke','#0d2030').attr('stroke-width','.3').attr('d',bigMapPath);
+  bigMapG.append('path').datum({type:'Sphere'}).attr('fill','#d0e0f0').attr('d',bigMapPath);
+  bigMapG.append('path').datum(d3.geoGraticule()()).attr('fill','none').attr('stroke','#b8ccd8').attr('stroke-width','.3').attr('d',bigMapPath);
 
   if (!worldData) await loadWorldData();
   drawMapCountries(bigMapG, bigMapPath, el, 'bmtip', false);
@@ -1775,13 +1851,13 @@ function drawMapCountries(g, path, el, tipId, isMini) {
 }
 
 function getCountryColor(iso3) {
-  if(!iso3) return '#0c1825';
+  if(!iso3) return '#c8d8e8';
   const inData = CMAP[iso3];
   const isActive = activeCountries.has(iso3);
-  if(isActive && inData) return '#0066cc';
-  if(isActive) return '#003399';
-  if(inData) return '#1a2d40';
-  return '#0c1825';
+  if(isActive && inData) return '#1555a8';
+  if(isActive) return '#0d3d8a';
+  if(inData) return '#9ab0cc';
+  return '#c8d8e8';
 }
 
 function colorMaps() {
@@ -1789,7 +1865,7 @@ function colorMaps() {
     if(!g) return;
     g.selectAll('.mc')
       .attr('fill', d=>getCountryColor(d.iso3))
-      .attr('stroke', d=>d.iso3&&activeCountries.has(d.iso3)?'var(--accent)':'#1a2d40')
+      .attr('stroke', d=>d.iso3&&activeCountries.has(d.iso3)?'var(--accent)':'#b8c8d8')
       .attr('stroke-width', d=>d.iso3&&activeCountries.has(d.iso3)?'1':'.4')
       .classed('on', d=>!!d.iso3&&activeCountries.has(d.iso3));
   });
@@ -1970,5 +2046,21 @@ document.getElementById('ai-query')?.addEventListener('keydown', e=>{
   if(e.key==='Enter') runAI();
 });
 </script>
+
+<!-- ── Perplexity 프롬프트 미리보기 모달 ── -->
+<div class="pplx-modal-overlay" id="pplx-overlay" onclick="closePplxModal(event)">
+  <div class="pplx-modal">
+    <div class="pplx-modal-title">🔍 Perplexity 분석 프롬프트</div>
+    <div class="pplx-modal-sub">
+      아래 프롬프트가 <strong>클립보드에 자동 복사</strong>됩니다.<br>
+      Perplexity 창이 열리면 검색창에 <strong>Ctrl+V</strong> (Mac: ⌘+V) 로 바로 붙여넣기 하세요.
+    </div>
+    <textarea class="pplx-prompt-area" id="pplx-prompt-text" readonly></textarea>
+    <div class="pplx-modal-actions">
+      <button class="pplx-modal-cancel" onclick="closePplxModal()">취소</button>
+      <button class="pplx-modal-open" onclick="confirmOpenPplx()">✓ 복사됨 — Perplexity 열기</button>
+    </div>
+  </div>
+</div>
 </body>
 </html>
